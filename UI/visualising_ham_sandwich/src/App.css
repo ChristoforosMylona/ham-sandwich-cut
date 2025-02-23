@@ -1,0 +1,114 @@
+/* Global Styles */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: 'Roboto', sans-serif;
+  box-sizing: border-box;
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Main App Container */
+.app-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.5s ease;
+}
+
+.app-container.light {
+  background-color: #f4f4f9; /* Light mode background */
+}
+
+.app-container.dark {
+  background-color: #121212; /* Dark mode background */
+}
+
+/* Optional Styles for Navbar and Content */
+nav {
+  background-color: #222;
+  color: white;
+  padding: 1rem;
+  flex-shrink: 0; /* Ensure navbar doesn't shrink */
+}
+
+nav a {
+  margin: 0 1rem;
+  color: white;
+  text-decoration: none;
+}
+
+nav a:hover {
+  color: #646cff;
+}
+
+h2 {
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+/* Style for Buttons */
+button {
+  font-weight: 600;
+}
+
+/* Body, Text, and Background Transitions */
+body {
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+.light h2,
+.light h3,
+.light button {
+  color: #333;
+}
+
+.dark h2,
+.dark button {
+  color: #fff;
+}
+
+/* Teach Mode Label Styling for Light/Dark Modes */
+.MuiFormControlLabel-label {
+  color: inherit; /* Ensures label follows theme color */
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.light .MuiFormControlLabel-label {
+  color: #333; /* Dark text color in light mode */
+}
+
+.dark .MuiFormControlLabel-label {
+  color: #fff; /* Light text color in dark mode */
+}
+
+/* Tooltip Styling */
+.MuiTooltip-tooltip {
+  background-color: #333; /* Dark background for Tooltip */
+}
+
+.light .MuiTooltip-tooltip {
+  background-color: #f4f4f9; /* Light background for Tooltip */
+  color: #333; /* Light theme text color for tooltips */
+}
+
+.dark .MuiTooltip-tooltip {
+  background-color: #333; /* Dark background for Tooltip */
+  color: #fff; /* Dark theme text color for tooltips */
+}
