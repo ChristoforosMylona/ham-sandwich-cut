@@ -2,34 +2,60 @@ import {
   Box,
   Button,
   Collapse,
+  FormHelperText,
   IconButton,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
   Typography,
+  useTheme,
 } from "@mui/material";
 import {
+  CategoryScale,
   ChartData,
   ChartDataset,
   Chart as ChartJS,
   ChartOptions,
+  LinearScale,
+  LineElement,
+  PointElement,
   registerables,
+  Tooltip as TooltipJS,
 } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import "chartjs-plugin-dragdata";
 import zoomPlugin from "chartjs-plugin-zoom";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Line } from "react-chartjs-2";
 import readXlsxFile from "read-excel-file";
 import FileUploadDownloadButton from "./FileUploadDownloadButton";
 import { Point, Step, StepData } from "./Types/Step";
 
-import { ArrowBack, ArrowForward, MenuBook } from "@mui/icons-material";
+import {
+  ArrowBack,
+  ArrowForward,
+  FirstPage,
+  HelpOutline,
+  LastPage,
+  MenuBook,
+  ZoomOutMap,
+} from "@mui/icons-material";
 import { calculateLine } from "../api/CalculateLineService";
 import classes from "./ReactChartJs.module.scss";
+import {
+  handleAlgorithmChange,
+  handleBluePointsChange,
+  handleRedPointsChange,
+} from "./Handlers";
 
 ChartJS.register(...registerables, annotationPlugin, zoomPlugin);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, TooltipJS);
+const PADDING_FACTOR = 2;
 
 const ReactChartJs: React.FC = () => {
   const [redPoints, setRedPoints] = useState(7);
@@ -43,6 +69,8 @@ const ReactChartJs: React.FC = () => {
     maxY: 10,
   });
 
+  const chartRef = useRef<ChartJS<"line", number[], string>>(null);
+
   const [isCalculating, setIsCalculating] = useState(false);
 
   const [hasError, setHasError] = useState(false);
@@ -50,13 +78,23 @@ const ReactChartJs: React.FC = () => {
   const [stepsTaken, setStepsTaken] = useState<Step[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [finalCut, setFinalCut] = useState<{
-    slope: number;
-    intercept: number;
+    slope: number | null;
+    intercept: number | null;
+    x_intercept: number | null; // For vertical lines
+    is_vertical: boolean;
   } | null>(null);
+
   const [currentStepData, setCurrentStepData] = useState<StepData | null>(null);
 
   // State for Teach Mode
   const [teachMode, setTeachMode] = useState(false);
+
+  // state for selected endpoint
+  const [selectedEndpoint, setSelectedEndpoint] = useState("default");
+  const [redWarning, setRedWarning] = useState<boolean>(false);
+  const [blueWarning, setBlueWarning] = useState<boolean>(false);
+
+  const theme = useTheme();
 
   useEffect(() => {
     // Assuming stepsTaken is populated from the API or a similar source
@@ -88,7 +126,8 @@ const ReactChartJs: React.FC = () => {
       setHasError,
       setStepsTaken,
       setFinalCut,
-      teachMode
+      teachMode,
+      selectedEndpoint
     );
   }, [
     redData,
@@ -98,41 +137,71 @@ const ReactChartJs: React.FC = () => {
     setHasError,
     setStepsTaken,
     setFinalCut,
+    selectedEndpoint,
   ]);
 
   const chartDataSets = useMemo<ChartData<"line">>(() => {
     const datasets: ChartDataset<"line">[] = [];
 
-    datasets.push({
-      data: redData,
-      label: "Red Points",
-      backgroundColor: "rgba(255, 99, 132, 0.5)",
-      borderColor: "rgba(255, 99, 132, 1)",
-      pointRadius: 10,
-      showLine: false, // Scatter points
-    });
+    if (
+      (teachMode &&
+        !(currentStepIndex > 1 && currentStepIndex != stepsTaken.length - 1)) ||
+      !teachMode
+    ) {
+      datasets.push({
+        data: redData,
+        label: "Red Points",
+        backgroundColor: "rgba(255, 99, 132, 0.5)",
+        borderColor: "rgba(255, 99, 132, 1)",
+        pointRadius: 10,
+        showLine: false, // Scatter points
+      });
 
-    datasets.push({
-      data: blueData,
-      label: "Blue Points",
-      backgroundColor: "rgba(54, 162, 235, 0.5)",
-      borderColor: "rgba(54, 162, 235, 1)",
-      pointRadius: 10,
-      showLine: false,
-    });
+      datasets.push({
+        data: blueData,
+        label: "Blue Points",
+        backgroundColor: "rgba(54, 162, 235, 0.5)",
+        borderColor: "rgba(54, 162, 235, 1)",
+        pointRadius: 10,
+        showLine: false,
+      });
+    }
 
     // Add line dataset if finalCut exists
     if (finalCut) {
-      const lineData: Point[] = [
-        {
-          x: graphBounds.minX,
-          y: finalCut.slope * graphBounds.minX + finalCut.intercept,
-        },
-        {
-          x: graphBounds.maxX,
-          y: finalCut.slope * graphBounds.maxX + finalCut.intercept,
-        },
-      ];
+      const xRange = graphBounds.maxX - graphBounds.minX;
+      const paddedMinX = graphBounds.minX - xRange * PADDING_FACTOR;
+      const paddedMaxX = graphBounds.maxX + xRange * PADDING_FACTOR;
+
+      let lineData: Point[] = [];
+
+      // Check for vertical line
+      if (finalCut.is_vertical) {
+        // For vertical lines, use x_intercept (ensure it's a number)
+        const xIntercept = finalCut.x_intercept;
+
+        if (xIntercept !== null) {
+          lineData = [
+            { x: xIntercept, y: graphBounds.minY }, // Start from the bottom of the graph
+            { x: xIntercept, y: graphBounds.maxY }, // End at the top of the graph
+          ];
+        }
+      } else if (finalCut.slope !== null && finalCut.intercept !== null) {
+        // For non-vertical lines, calculate y-values using slope and intercept
+        const slope = finalCut.slope;
+        const intercept = finalCut.intercept;
+
+        lineData = [
+          {
+            x: paddedMinX,
+            y: slope * paddedMinX + intercept,
+          },
+          {
+            x: paddedMaxX,
+            y: slope * paddedMaxX + intercept,
+          },
+        ];
+      }
 
       datasets.push({
         label: "Ham Sandwich Cut",
@@ -142,6 +211,7 @@ const ReactChartJs: React.FC = () => {
         showLine: true,
         fill: false,
         pointRadius: 0, // Hide points for the ham cut line
+        backgroundColor:"rgba(75, 192, 192, 1)"
       });
     }
 
@@ -168,10 +238,11 @@ const ReactChartJs: React.FC = () => {
       }
 
       // Add dual lines if they exist, but group them into a single dataset per color
-      if (currentStepData.dualLines) {
+      if (currentStepIndex >= 1) {
+        const duals = stepsTaken[1].data.dualLines;
+
         ["red", "blue"].forEach((color) => {
-          const dualLines =
-            currentStepData.dualLines?.[color as "red" | "blue"];
+          const dualLines = duals?.[color as "red" | "blue"];
           if (dualLines) {
             const allDualLinePoints: Point[] = dualLines.flatMap((line) => [
               { x: graphBounds.minX, y: line.m * graphBounds.minX + line.b },
@@ -190,6 +261,7 @@ const ReactChartJs: React.FC = () => {
               showLine: true,
               fill: false,
               pointRadius: 0,
+        
             });
           }
         });
@@ -366,6 +438,7 @@ const ReactChartJs: React.FC = () => {
   }, [currentStepIndex, stepsTaken]);
 
   const options: ChartOptions<"line"> = {
+    responsive: true,
     maintainAspectRatio: false,
     plugins: {
       dragData: {
@@ -397,21 +470,30 @@ const ReactChartJs: React.FC = () => {
         },
       },
       tooltip: {
+        enabled: true, // Ensure tooltips are enabled
         callbacks: {
           label: function (context) {
             const raw = context.raw as { x: number; y: number };
-            if (context.dataset.label === "Ham Sandwich Cut") {
-              return `Cut: y = ${raw.y.toFixed(2)}`;
-            } else if (context.dataset.label?.includes("Dual Lines")) {
-              return `Dual Line: y = ${raw.y.toFixed(2)}`;
+  
+            // Check dataset label to determine how to display the information
+            if (context.dataset.label === "Ham Sandwich Cut" && currentStepData?.cut) {
+              // Display Ham Sandwich Cut equation
+              return `Ham Sandwich Cut: y = ${currentStepData.cut.slope.toFixed(2)}x + ${currentStepData.cut.intercept.toFixed(2)}`;
+            } else if (context.dataset.label === "Ham Sandwich Cut Dual Point") {
+              // Display Dual Point coordinates
+              return `Dual Point: (${raw.x.toFixed(2)}, ${raw.y.toFixed(2)})`;
             } else if (context.dataset.label?.includes("Interval")) {
+              // Display interval info (vertical line)
               return `Interval: x = ${raw.x.toFixed(2)}`;
             } else {
-              return `${context.dataset.label}: (${raw.x.toFixed(
-                2
-              )}, ${raw.y.toFixed(2)})`;
+              // Default label for other points
+              return `${context.dataset.label}: (${raw.x.toFixed(2)}, ${raw.y.toFixed(2)})`;
             }
           },
+          // footer: (context) => {
+          //   const arrayLines = ["Line1", "Line2", "Line3"];
+          //   return arrayLines;
+          // }
         },
       },
     },
@@ -428,6 +510,9 @@ const ReactChartJs: React.FC = () => {
       },
     },
   };
+  
+  
+  
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -440,7 +525,6 @@ const ReactChartJs: React.FC = () => {
       reader.onload = (e) => {
         const fileContent = e.target?.result as string;
         const jsonData = JSON.parse(fileContent);
-        console.log(jsonData);
         setRedData(jsonData.redPoints);
         setBlueData(jsonData.bluePoints);
         setRedPoints(jsonData.redPoints.length);
@@ -494,12 +578,99 @@ const ReactChartJs: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    console.log({redData});
+    console.log({blueData});
+  }, [redData, blueData]);
+
+  useEffect(() => {
+    memoizedCalculateLine();
+  }, [redData, blueData, selectedEndpoint]);
+
+  // Memoized handlers
+  const memoizedAlgorithmChange = useCallback(
+    (e: React.ChangeEvent<{ value: unknown }>) =>
+      handleAlgorithmChange(
+        e,
+        setSelectedEndpoint,
+        redPoints,
+        setRedPoints,
+        bluePoints,
+        setBluePoints,
+        setRedWarning,
+        setBlueWarning
+      ),
+    [redPoints, bluePoints]
+  );
+
+  const memoizedRedPointsChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      handleRedPointsChange(e, selectedEndpoint, setRedPoints, setRedWarning),
+    [selectedEndpoint]
+  );
+
+  const memoizedBluePointsChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      handleBluePointsChange(
+        e,
+        selectedEndpoint,
+        setBluePoints,
+        setBlueWarning
+      ),
+    [selectedEndpoint]
+  );
+
   return (
     <div className={classes.outerDiv}>
-      <Typography variant="h3" className={classes.title} marginBottom={2}>
-        Ham Sandwich Cut 🥪
-      </Typography>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        position="relative"
+        width="100%"
+        marginBottom={2}
+      >
+        {/* Endpoint Selection - Left Aligned */}
+        <TextField
+          select
+          label="Choose Algorithm"
+          value={selectedEndpoint}
+          onChange={(e) => {
+            if (e.target.value !== "default") {
+              setTeachMode(false);
+            }
+            memoizedAlgorithmChange(e);
+            setSelectedEndpoint(e.target.value);
+          }}
+          SelectProps={{ native: true }}
+          variant="outlined"
+          sx={{
+            position: "absolute",
+            left: 20,
+            top: 1,
+            minWidth: 180,
+          }}
+        >
+          <option value="default">Lo-Matoušek-Steiger</option>
+          <option value="brute-force">Brute Force</option>
+          <option value="ham-sandwich-mlp">MLP Method</option>
+          <option value="ham-sandwich-ilp">ILP Method</option>
+        </TextField>
 
+        {/* Title - Centered */}
+        <Typography
+          variant="h3"
+          className={classes.title}
+          sx={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Ham Sandwich Cut 🥪
+        </Typography>
+      </Box>
 
       {/* Hide everything except step navigation when Teach Mode is ON */}
       <Collapse in={!teachMode}>
@@ -513,38 +684,64 @@ const ReactChartJs: React.FC = () => {
           height={"120px"}
           marginTop={0}
         >
-          <TextField
-            label="Number of Red Points"
-            type="number"
-            value={redPoints}
-            onChange={(e) =>
-              setRedPoints(Math.min(Math.max(1, Number(e.target.value)), 10000))
-            }
-          />
-          <TextField
-            label="Number of Blue Points"
-            type="number"
-            value={bluePoints}
-            onChange={(e) =>
-              setBluePoints(
-                Math.min(Math.max(1, Number(e.target.value)), 10000)
-              )
-            }
-          />
+          {/* Red Points Input with Fixed Helper Text */}
+          <Box position="relative" minWidth={150}>
+            <TextField
+              label="Number of Red Points"
+              type="number"
+              value={redPoints}
+              onChange={memoizedRedPointsChange}
+              error={redWarning}
+              inputProps={{
+                min: 1,
+                max: selectedEndpoint !== "default" ? 50 : 10000,
+              }}
+              sx={{ width: "100%" }}
+            />
+            {redWarning && (
+              <FormHelperText error sx={{ position: "absolute", bottom: -20 }}>
+                ⚠️ Max 50 points
+              </FormHelperText>
+            )}
+          </Box>
+
+          {/* Blue Points Input with Fixed Helper Text */}
+          <Box position="relative" minWidth={150}>
+            <TextField
+              label="Number of Blue Points"
+              type="number"
+              value={bluePoints}
+              onChange={memoizedBluePointsChange}
+              error={blueWarning}
+              inputProps={{
+                min: 1,
+                max: selectedEndpoint !== "default" ? 50 : 10000,
+              }}
+              sx={{ width: "100%" }}
+            />
+            {blueWarning && (
+              <FormHelperText error sx={{ position: "absolute", bottom: -20 }}>
+                ⚠️ Max 50 points
+              </FormHelperText>
+            )}
+          </Box>
+
+          {/* Randomize Button */}
           <Button
             variant="contained"
             onClick={() => {
-              randomiseData();
               if (teachMode) {
                 setCurrentStepIndex(0);
               }
+              setFinalCut(null);
+              randomiseData();
             }}
             sx={{ height: "36.5px" }}
           >
             Randomise Chart
           </Button>
 
-          {/* File Upload & Download Button */}
+          {/* File Upload & Download */}
           <FileUploadDownloadButton handleFileUpload={handleFileUpload} />
         </Box>
       </Collapse>
@@ -588,6 +785,20 @@ const ReactChartJs: React.FC = () => {
                 </Typography>
 
                 <Box display="flex" gap={2}>
+                  {/* First Step */}
+                  <Tooltip title="First Step">
+                    <span>
+                      <Button
+                        variant="outlined"
+                        onClick={() => setCurrentStepIndex(0)}
+                        disabled={currentStepIndex === 0}
+                      >
+                        <FirstPage />
+                      </Button>
+                    </span>
+                  </Tooltip>
+
+                  {/* Previous Step */}
                   <Tooltip title="Previous Step">
                     <span>
                       <Button
@@ -602,6 +813,7 @@ const ReactChartJs: React.FC = () => {
                     </span>
                   </Tooltip>
 
+                  {/* Next Step */}
                   <Tooltip title="Next Step">
                     <span>
                       <Button
@@ -617,6 +829,21 @@ const ReactChartJs: React.FC = () => {
                       </Button>
                     </span>
                   </Tooltip>
+
+                  {/* Last Step */}
+                  <Tooltip title="Last Step">
+                    <span>
+                      <Button
+                        variant="outlined"
+                        onClick={() =>
+                          setCurrentStepIndex(stepsTaken.length - 1)
+                        }
+                        disabled={currentStepIndex === stepsTaken.length - 1}
+                      >
+                        <LastPage />
+                      </Button>
+                    </span>
+                  </Tooltip>
                 </Box>
               </Box>
             )}
@@ -627,30 +854,53 @@ const ReactChartJs: React.FC = () => {
       <div className={classes.outerGraphDiv}>
         <div className={classes.innerGraphDiv}>
           {/* Teach Mode Button - Positioned Top Right */}
-          <Box
-            sx={{
-              position: "absolute",
-              top: 10,
-              right: 10,
-              zIndex: 20, // Higher than overlay (which is z-index: 10)
-              backgroundColor: "rgba(255, 255, 255, 0.8)", // Light background for visibility
-              borderRadius: "50%",
-              padding: "6px",
-              boxShadow: 3, // Subtle shadow
-              cursor: "pointer",
-            }}
-          >
-            <Tooltip title="Toggle Teach Mode">
-              <IconButton
-                onClick={() => setTeachMode(!teachMode)}
-                color={teachMode ? "primary" : "default"}
-              >
-                <MenuBook />
-              </IconButton>
-            </Tooltip>
-          </Box>
+          {selectedEndpoint === "default" && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                zIndex: 20,
+                backgroundColor:
+                  theme.palette.mode === "dark"
+                    ? "rgba(255, 255, 255, 0.2)"
+                    : "rgba(0, 0, 0, 0.1)",
+                borderRadius: "50%",
+                padding: "6px",
+                boxShadow: 3,
+                cursor: "pointer",
+                opacity: 0.5,
+                transition:
+                  "opacity 0.3s ease-in-out, background-color 0.3s ease-in-out",
+                "&:hover": {
+                  opacity: 1,
+                  backgroundColor:
+                    theme.palette.mode === "dark"
+                      ? "rgba(255, 255, 255, 0.4)"
+                      : "rgba(0, 0, 0, 0.2)",
+                },
+              }}
+              className={classes.teachModeButton}
+            >
+              <Tooltip title="Toggle Teach Mode">
+                <IconButton
+                  className={classes.teachModeButton}
+                  onClick={() => {
+                    if (!teachMode) {
+                      setFinalCut(null);
+                    }
+                    setTeachMode(!teachMode);
+                  }}
+                  color={teachMode ? "primary" : "default"}
+                >
+                  <MenuBook />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
 
-          <Line data={chartData} options={options} />
+          {/* Chart */}
+          <Line data={chartData} options={options} ref={chartRef} />
 
           {/* Overlay for Calculating/Error Message */}
           {(isCalculating || hasError) && (
@@ -673,11 +923,96 @@ const ReactChartJs: React.FC = () => {
                     </Box>
                   </>
                 ) : (
-                  "⚠️ Something went wrong. Please try again."
+                  <>
+                    ⚠️ Something went wrong. Please try again.
+                    {selectedEndpoint === "default" && (
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          marginTop: 2,
+                          fontSize: "body1",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        It seems the calculated ham sandwich cut may be vertical. You may want to try other algorithms for better results.
+                      </Typography>
+                    )}
+                  </>
                 )}
               </Typography>
             </div>
           )}
+
+          {/* Reset Zoom Button - Positioned Left of Help Icon */}
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 10,
+              right: 75,
+              zIndex: 20,
+              backgroundColor:
+                theme.palette.mode === "dark"
+                  ? "rgba(255, 255, 255, 0.2)"
+                  : "rgba(0, 0, 0, 0.1)",
+              borderRadius: "50%",
+              padding: "6px",
+              boxShadow: 3,
+              cursor: "pointer",
+              opacity: 0.5,
+              transition:
+                "opacity 0.3s ease-in-out, background-color 0.3s ease-in-out",
+              "&:hover": {
+                opacity: 1,
+                backgroundColor:
+                  theme.palette.mode === "dark"
+                    ? "rgba(255, 255, 255, 0.4)"
+                    : "rgba(0, 0, 0, 0.2)",
+              },
+            }}
+          >
+            <Tooltip title="Reset zoom & pan">
+              <IconButton
+                color="default"
+                onClick={() => chartRef.current?.resetZoom()}
+              >
+                <ZoomOutMap /> {/* Uses a zoom-related icon */}
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Pan & Zoom Help Icon - Positioned Bottom Right */}
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 10,
+              right: 10,
+              zIndex: 20,
+              backgroundColor:
+                theme.palette.mode === "dark"
+                  ? "rgba(255, 255, 255, 0.2)"
+                  : "rgba(0, 0, 0, 0.1)",
+              borderRadius: "50%",
+              padding: "6px",
+              boxShadow: 3,
+              cursor: "pointer",
+              opacity: 0.5,
+              transition:
+                "opacity 0.3s ease-in-out, background-color 0.3s ease-in-out",
+              "&:hover": {
+                opacity: 1,
+                backgroundColor:
+                  theme.palette.mode === "dark"
+                    ? "rgba(255, 255, 255, 0.4)"
+                    : "rgba(0, 0, 0, 0.2)",
+              },
+            }}
+          >
+            <Tooltip title="Hold Ctrl to Pan & Zoom">
+              <IconButton color="default">
+                <HelpOutline />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </div>
       </div>
     </div>

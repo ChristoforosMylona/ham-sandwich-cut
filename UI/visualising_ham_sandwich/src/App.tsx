@@ -25,14 +25,33 @@ const App: React.FC = () => {
       },
       h5: {
         fontWeight: 600,
-        color: darkMode ? "#e0e0e0" : "#222", // Adjust h5 color for light and dark mode
+        color: darkMode ? "#e0e0e0" : "#222",
       },
       button: {
         fontWeight: 600,
       },
     },
+    components: {
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            "&:focus-visible": {
+              outline: "none", // Removes the outline only for mouse users
+            },
+          },
+        },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            "&:focus-visible": {
+              outline: "none",
+            },
+          },
+        },
+      },
+    },
   });
-  
 
   return (
     <ThemeProvider theme={theme}>

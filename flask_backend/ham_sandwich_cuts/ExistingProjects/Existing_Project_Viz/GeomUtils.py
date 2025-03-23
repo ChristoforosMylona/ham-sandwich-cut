@@ -4,11 +4,17 @@ from shapely.geometry import Point, LineString
 from numpy.linalg import det
 
 class Line:
-    def __init__(self,m,b):
+    def __init__(self, m=None, b=None, vertical=False, x_intercept=None):
+        if vertical and x_intercept is None:
+            raise ValueError("Vertical lines must have an x_intercept.")
         self.m = m
         self.b = b
-        
+        self.vertical = vertical
+        self.x_intercept = x_intercept
+
     def to_dict(self):
+        if self.vertical:
+            return {'vertical': True, 'x_intercept': self.x_intercept}
         return {'m': self.m, 'b': self.b}
 
 class LineSegment:

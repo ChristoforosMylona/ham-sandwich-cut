@@ -45,7 +45,7 @@ class HamInstance:
                 {
                     "id": len(steps_taken) + 1,
                     "type": "dual_lines_calculation",
-                    "description": "Calculate dual lines.",
+                    "description": "Calculate dual lines of points.",
                     "data": {
                         "dualLines": {
                             "red": [line.to_dict() for line in self.red_duals],
@@ -54,35 +54,6 @@ class HamInstance:
                     },
                 }
             )
-
-    # def __init__(self, infile = None, plot_constant=10):
-    #     # Read Input Points
-    #     self.plot_constant = plot_constant
-    #     self.red_points = []
-    #     self.blue_points = []
-    #     self.extra_red = False
-    #     self.extra_blue = False
-
-    #     if infile is None:
-    #         self.start_input()
-    #     else:
-    #         self.read_points(infile)
-
-    #     # Make point sets odd
-    #     if len(self.red_points) % 2 == 0:
-    #         self.extra_red = self.red_points.pop()
-    #     if len(self.blue_points) % 2 == 0:
-    #         self.extra_blue = self.blue_points.pop()
-
-    #     # Calculate Duals
-    #     self.red_duals = [compute_dual_line(i,self.plot_constant) for i in self.red_points]
-    #     self.blue_duals = [compute_dual_line(i,self.plot_constant) for i in self.blue_points]
-
-    #     self.all_points = self.red_points + self.blue_points
-    #     if self.extra_red:
-    #         self.all_points.append(self.extra_red)
-    #     if self.extra_blue:
-    #         self.all_points.append(self.extra_blue)
 
     def start_input(self):
         check = input(

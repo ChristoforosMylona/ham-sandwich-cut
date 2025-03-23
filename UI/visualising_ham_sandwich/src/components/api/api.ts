@@ -5,7 +5,6 @@ const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const checkForLocal = (url: string) => {
-    console.log(url);
   // You can adjust the condition here to detect if it's local or Docker
   if (url.includes('localhost')) {
     return 'http://localhost:5000'; // Local backend URL
@@ -36,7 +35,7 @@ export const fetchData = async (endpoint: string, method: string, body?: any) =>
 export const downloadFile = async (fileType: "csv" | "json" | "excel") => {
   try {
     const baseUrl = checkForLocal(apiBaseUrl);
-    const response = await fetch(`${baseUrl}/${fileType}`);
+    const response = await fetch(`${baseUrl}/get-sample-file/${fileType}`);
     if (!response.ok) throw new Error("Failed to fetch file");
 
     const blob = await response.blob();
@@ -52,5 +51,26 @@ export const downloadFile = async (fileType: "csv" | "json" | "excel") => {
   } catch (error) {
     console.error("Error downloading file:", error);
     throw error;
+  }
+};
+
+
+export const fetchRandomPoints = async (redPoints: number, bluePoints: number) => {
+  try {
+    const baseUrl = checkForLocal(apiBaseUrl);
+    const response = await fetch(`${baseUrl}/random_points/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ redPoints, bluePoints }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    throw error;  // Pass the error back to the caller
   }
 };

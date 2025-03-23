@@ -8,5 +8,10 @@ export default defineConfig({
     modules: {
       localsConvention: "camelCase", // Enables camelCase class names
     },
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler'
+      }
+    }
   },
 });

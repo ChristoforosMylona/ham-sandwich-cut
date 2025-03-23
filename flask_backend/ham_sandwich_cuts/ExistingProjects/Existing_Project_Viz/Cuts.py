@@ -1,10 +1,11 @@
 import math
 from random import choice
+
 from .GeomUtils import *
 
-# from PlotUtils import *
+from shapely import MultiPoint
 from shapely.geometry import Point
-
+from shapely.geometry.linestring import LineString as LineStringEmpty
 
 class LinearPlanarCut:
     def __init__(self, min_interval=1):
@@ -32,6 +33,13 @@ class LinearPlanarCut:
 
         self._show_interval(self.ham_instance, self.interval)
 
+        steps_taken.append({
+            "id": len(steps_taken) + 1,
+            "type": "binary_search",
+            "description": "Perform binary search to find the cut.",
+            "data": {"interval": {"start": self.interval.l, "end": self.interval.r}},
+        })
+        
         while len(self.interval) > self.min_interval:
             lint, rint = self._split_interval(self.interval)
             self._show_interval(
@@ -64,14 +72,26 @@ class LinearPlanarCut:
             self._show_interval(self.ham_instance, self.interval)
 
         cut = self.median_intersection()
-        steps_taken.append(
-            {
-                "id": len(steps_taken) + 1,
-                "type": "compute_cut",
-                "description": "Compute the cut.",
-                "data": {"cut": {"slope": cut[0].m, "intercept": cut[0].b}},
-            }
-        )
+        
+        if cut[0] == "vertical":
+            steps_taken.append(
+                {
+                    "id": len(steps_taken) + 1,
+                    "type": "compute_cut",
+                    "description": "Compute the cut.",
+                    "data": {"cut": {"is_vertical": True, "x_intercept": cut[1]}},
+                }
+            )
+        else:
+            slope, intercept = cut[1]
+            steps_taken.append(
+                {
+                    "id": len(steps_taken) + 1,
+                    "type": "compute_cut",
+                    "description": "Compute the cut.",
+                    "data": {"cut": {"slope": slope, "intercept": intercept, "is_vertical": False}},
+                }
+            )
 
         return cut
 
@@ -94,10 +114,6 @@ class LinearPlanarCut:
         red_intersections = self._get_intersections(self.ham_instance.red_duals)
         blue_intersections = self._get_intersections(self.ham_instance.blue_duals)
 
-        # y_min, y_max = find_y_bounds(self.ham_instance.all_points)
-        # prepare_axis(self.interval.l-1, self.interval.r+1, self.intervalymin-5, self.intervalymax+5)
-
-        # plt.title('Median Levels')
         red_med_linestring = self._get_med_linestring(
             self.ham_instance.red_duals, red_intersections, color="r"
         )
@@ -105,21 +121,45 @@ class LinearPlanarCut:
             self.ham_instance.blue_duals, blue_intersections, color="b"
         )
 
-        # print("red: ", red_med_linestring)
-        # print("blue: ", blue_med_linestring)
-
         ham_points = red_med_linestring.intersection(blue_med_linestring)
-        # print("ham_points type:", type(ham_points))
-        # print("ham_points: ", ham_points)
-        # print("\n")
-        if isinstance(ham_points, Point):
-            ham_points = [ham_points]
-            ham_cuts = [
-                compute_dual_line(hp, constant=self.ham_instance.plot_constant)
-                for hp in ham_points
-            ]
 
-        return ham_cuts
+        if isinstance(ham_points, (Point, MultiPoint)):
+            ham_points = ham_points.geoms[0] if isinstance(ham_points, MultiPoint) else ham_points  
+
+            # print("ham_points:", ham_points)  
+
+            line = compute_dual_line(ham_points, constant=self.ham_instance.plot_constant)
+            
+            return "non-vertical", (line.m, line.b)
+
+        elif isinstance(ham_points, (LineString, LineStringEmpty) or ham_points.is_empty):
+            # In the case where the cut is a vertical line
+            def get_dual_point(line): 
+                x1, y1 = line.coords[0]
+                x2, y2  = line.coords[1]
+                
+                a = (y2-y1)/(x2-x1)
+                b = y1 - a * x1
+                
+                # dual point = (a, -b)                    
+                return (a, -b)
+                        
+            dual_point_1 = get_dual_point(red_med_linestring)
+            dual_point_2 = get_dual_point(blue_med_linestring)
+            print(dual_point_1, dual_point_2)
+            
+            # Check if the two dual points are on a vertical line (i.e., the x-coordinates are the same)
+            if dual_point_1[0] == dual_point_2[0]:  # x-coordinates are the same
+                # The equation of the vertical line would be x = dual_point_1[0]
+                # print(f"The equation of the vertical line is: x = {dual_point_1[0]}")
+                return "vertical", dual_point_1[0]
+        else:
+            print("\n\n")
+            print("ham points: ", ham_points, type(ham_points), ham_points.is_empty)
+            print("red_med_linestring: ", red_med_linestring)
+            print("blue_med_linestring: ", blue_med_linestring)
+            print("\n\n")
+            
 
     def _show_interval(self, ham_instance, interval, steps_taken=None, side=None):
         l_red_med = self._find_median_level(interval.l, ham_instance.red_duals)
