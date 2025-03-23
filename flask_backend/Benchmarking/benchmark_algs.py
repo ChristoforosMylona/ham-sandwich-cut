@@ -101,13 +101,21 @@ def save_results_to_file(results):
     # Generate a filename with the current datetime
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"{timestamp}.json"
-    filepath = os.path.join(os.path.dirname(__file__), filename)
+
+    # Define the Results directory path
+    results_dir = os.path.join(os.path.dirname(__file__), "Results")
+
+    # Ensure the directory exists
+    os.makedirs(results_dir, exist_ok=True)
+
+    # Full filepath inside the Results directory
+    filepath = os.path.join(results_dir, filename)
 
     # Save the results as a JSON file
     with open(filepath, "w") as f:
         json.dump(results, f, indent=4)
 
-    print(f"Results saved to {filename}")
+    print(f"Results saved to {filepath}")
 
 
 # Main execution
