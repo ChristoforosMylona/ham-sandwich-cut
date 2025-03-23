@@ -17,7 +17,7 @@ def test_algorithms(num_tests=50, num_runs=3):
     brute_no_numpy_times = {}
 
     # Loop through each size from 100 to num_tests (step 25)
-    for size in range(500, num_tests + 1, 25):
+    for size in range(100, num_tests + 1, 25):
         print(f"Running tests for input size: {size}")
 
         brute_time_list = []
@@ -71,7 +71,7 @@ def test_algorithms(num_tests=50, num_runs=3):
 
 
 # Run the tests and collect the results
-num_tests = 1000  # max size of the point set
+num_tests = 1500  # max size of the point set
 brute_times, ortools_times, planar_cut_times, brute_no_numpy_times = test_algorithms(num_tests)
 
 # Plot the results
