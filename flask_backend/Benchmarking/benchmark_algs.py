@@ -1,31 +1,34 @@
-
+import sys
+import os
 import timeit
+from datetime import datetime
+import json
 from matplotlib import pyplot as plt
 import numpy as np
 
-
-import sys
-import os
 # Dynamically determine the project path and add it to sys.path
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if project_path not in sys.path:
     sys.path.append(project_path)
-    
-from flask_backend.ham_sandwich_cuts.BruteForce.HamSandwichBruteForce import find_line_through_points_with_dual_intersection_brute, find_line_through_points_with_dual_intersection_brute_no_numpy
+
+from flask_backend.ham_sandwich_cuts.BruteForce.HamSandwichBruteForce import (
+    find_line_through_points_with_dual_intersection_brute,
+    find_line_through_points_with_dual_intersection_brute_no_numpy,
+)
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.Cuts import LinearPlanarCut
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.GeomUtils import random_point_set
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.IOUtils import HamInstance
 
 
-def test_algorithms(num_tests=50, num_runs=3):
+def test_algorithms(start=100, end=1500, step=25, num_runs=3, functions_to_test=None):
     # Collect results for each algorithm as dictionaries
     brute_times = {}
     ortools_times = {}
     planar_cut_times = {}
     brute_no_numpy_times = {}
 
-    # Loop through each size from 100 to num_tests (step 25)
-    for size in range(100, num_tests + 1, 25):
+    # Loop through each size from start to end (step)
+    for size in range(start, end + 1, step):
         print(f"Running tests for input size: {size}")
 
         brute_time_list = []
@@ -40,26 +43,30 @@ def test_algorithms(num_tests=50, num_runs=3):
                 red_points = [[point.x, point.y] for point in random_point_set(size)]
                 blue_points = [[point.x, point.y] for point in random_point_set(size)]
 
-                # Measure time for brute force algorithm
-                brute_time = timeit.timeit(
-                    lambda: find_line_through_points_with_dual_intersection_brute(red_points, blue_points), number=1
-                )
-                brute_time_list.append(brute_time)
+                # Test brute force algorithm
+                if "brute" in functions_to_test:
+                    brute_time = timeit.timeit(
+                        lambda: find_line_through_points_with_dual_intersection_brute(red_points, blue_points), number=1
+                    )
+                    brute_time_list.append(brute_time)
 
-                # Measure time for brute force (no numpy)
-                brute_no_numpy_time = timeit.timeit(
-                    lambda: find_line_through_points_with_dual_intersection_brute_no_numpy(red_points, blue_points), number=1
-                )
-                brute_no_numpy_time_list.append(brute_no_numpy_time)
+                # Test brute force (no numpy)
+                if "brute_no_numpy" in functions_to_test:
+                    brute_no_numpy_time = timeit.timeit(
+                        lambda: find_line_through_points_with_dual_intersection_brute_no_numpy(red_points, blue_points), number=1
+                    )
+                    brute_no_numpy_time_list.append(brute_no_numpy_time)
 
-                # Measure time for planar cut
-                NewCut = HamInstance(red_points=red_points, blue_points=blue_points, plot_constant=1)
-                LPC = LinearPlanarCut(0.5)
-                planar_cut_time = timeit.timeit(lambda: LPC.cut(NewCut), number=1)
-                planar_cut_time_list.append(planar_cut_time)
+                # Test planar cut
+                if "planar" in functions_to_test:
+                    NewCut = HamInstance(red_points=red_points, blue_points=blue_points, plot_constant=1)
+                    LPC = LinearPlanarCut(0.5)
+                    planar_cut_time = timeit.timeit(lambda: LPC.cut(NewCut), number=1)
+                    planar_cut_time_list.append(planar_cut_time)
 
                 # Placeholder for ortools (not implemented in this example)
-                ortools_time_list.append(100)
+                if "ortools" in functions_to_test:
+                    ortools_time_list.append(100)
 
             except Exception as e:
                 # If any function raises an error, skip this run
@@ -78,40 +85,84 @@ def test_algorithms(num_tests=50, num_runs=3):
     return brute_times, ortools_times, planar_cut_times, brute_no_numpy_times
 
 
-# Run the tests and collect the results
-num_tests = 1500  # max size of the point set
-brute_times, ortools_times, planar_cut_times, brute_no_numpy_times = test_algorithms(num_tests)
+def save_results_to_file(results):
+    # Generate a filename with the current datetime
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"{timestamp}.json"
+    filepath = os.path.join(os.path.dirname(__file__), filename)
 
-# Plot the results
-def plot_times(brute_times, ortools_times, planar_cut_times, brute_no_numpy_times):
-    # Extract sizes and times from dictionaries
-    brute_sizes = list(brute_times.keys())
-    brute_values = list(brute_times.values())
+    # Save the results as a JSON file
+    with open(filepath, "w") as f:
+        json.dump(results, f, indent=4)
 
-    ortools_sizes = list(ortools_times.keys())
-    ortools_values = list(ortools_times.values())
+    print(f"Results saved to {filename}")
 
-    planar_cut_sizes = list(planar_cut_times.keys())
-    planar_cut_values = list(planar_cut_times.values())
 
-    brute_no_numpy_sizes = list(brute_no_numpy_times.keys())
-    brute_no_numpy_values = list(brute_no_numpy_times.values())
+# Main execution
+if __name__ == "__main__":
+    # Default parameters
+    start = 100
+    end = 1500
+    step = 25
+    functions_to_test = {"brute", "ortools", "planar", "brute_no_numpy"}  # Default to all functions
+
+    # Parse command-line arguments
+    for arg in sys.argv[1:]:
+        if arg.startswith("start="):
+            start = int(arg.split("=")[1])
+        elif arg.startswith("end="):
+            end = int(arg.split("=")[1])
+        elif arg.startswith("step="):
+            step = int(arg.split("=")[1])
+        elif arg.startswith("functions="):
+            functions_to_test = set(arg.split("=")[1].split(","))
+
+    # Run the tests and collect the results
+    brute_times, ortools_times, planar_cut_times, brute_no_numpy_times = test_algorithms(
+        start, end, step, functions_to_test=functions_to_test
+    )
+
+    # Save the results to a file
+    results = {
+        "brute_times": brute_times,
+        "ortools_times": ortools_times,
+        "planar_cut_times": planar_cut_times,
+        "brute_no_numpy_times": brute_no_numpy_times,
+    }
+    save_results_to_file(results)
 
     # Plot the results
-    plt.figure(figsize=(10, 6))
-    plt.plot(brute_sizes, brute_values, label="Brute Force", color='red', marker='o')
-    plt.plot(planar_cut_sizes, planar_cut_values, label="Linear Planar Cut", color='green', marker='^')
-    plt.plot(brute_no_numpy_sizes, brute_no_numpy_values, label="Brute Force (No NumPy)", color='purple', marker='x')
-    # Uncomment if ORTools times are implemented
-    # plt.plot(ortools_sizes, ortools_values, label="ORTools Extended", color='blue', marker='s')
+    def plot_times(brute_times, ortools_times, planar_cut_times, brute_no_numpy_times):
+        # Extract sizes and times from dictionaries
+        brute_sizes = list(brute_times.keys())
+        brute_values = list(brute_times.values())
 
-    # Add labels, title, and legend
-    plt.xlabel('Number of Points')
-    plt.ylabel('Average Execution Time (seconds)')
-    plt.title('Algorithm Runtime Comparison (Averaged Over 3 Runs)')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+        ortools_sizes = list(ortools_times.keys())
+        ortools_values = list(ortools_times.values())
 
-# Plot the results
-plot_times(brute_times, ortools_times, planar_cut_times, brute_no_numpy_times)
+        planar_cut_sizes = list(planar_cut_times.keys())
+        planar_cut_values = list(planar_cut_times.values())
+
+        brute_no_numpy_sizes = list(brute_no_numpy_times.keys())
+        brute_no_numpy_values = list(brute_no_numpy_times.values())
+
+        # Plot the results
+        plt.figure(figsize=(10, 6))
+        if brute_times:
+            plt.plot(brute_sizes, brute_values, label="Brute Force", color='red', marker='o')
+        if planar_cut_times:
+            plt.plot(planar_cut_sizes, planar_cut_values, label="Linear Planar Cut", color='green', marker='^')
+        if brute_no_numpy_times:
+            plt.plot(brute_no_numpy_sizes, brute_no_numpy_values, label="Brute Force (No NumPy)", color='purple', marker='x')
+        if ortools_times:
+            plt.plot(ortools_sizes, ortools_values, label="ORTools Extended", color='blue', marker='s')
+
+        # Add labels, title, and legend
+        plt.xlabel('Number of Points')
+        plt.ylabel('Average Execution Time (seconds)')
+        plt.title('Algorithm Runtime Comparison (Averaged Over 3 Runs)')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+    plot_times(brute_times, ortools_times, planar_cut_times, brute_no_numpy_times)
