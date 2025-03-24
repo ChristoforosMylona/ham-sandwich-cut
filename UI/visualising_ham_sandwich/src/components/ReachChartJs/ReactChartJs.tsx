@@ -694,7 +694,7 @@ const ReactChartJs: React.FC = () => {
               error={redWarning}
               inputProps={{
                 min: 1,
-                max: selectedEndpoint !== "default" ? 50 : 10000,
+                max: ["default", "brute-force"].includes(selectedEndpoint) ? 1000 : 50,
               }}
               sx={{ width: "100%" }}
             />

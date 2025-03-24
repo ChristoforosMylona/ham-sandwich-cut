@@ -18,7 +18,7 @@ from flask_backend.ham_sandwich_cuts.BruteForce.HamSandwichBruteForce import (
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.Cuts import LinearPlanarCut
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.GeomUtils import random_point_set
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.IOUtils import HamInstance
-
+from flask_backend.ham_sandwich_cuts.MLP.HamSandwichMLP import find_line_through_points_ortools_extended
 
 import timeit
 
@@ -82,7 +82,12 @@ def test_algorithms(start=100, end=1500, step=25, num_runs=3, functions_to_test=
 
         # Placeholder for ortools (not implemented in this example)
         if "ortools" in functions_to_test:
-            ortools_time_list.append(100)  # Replace with actual timing logic if implemented
+            timer = timeit.Timer(
+                smtp="find_line_through_points_ortools_extended(red_points, blue_points)",
+                setup=("from flask_backend.ham_sandwich_cuts.MLP.HamSandwichMLP import find_line_through_points_ortools_extended; "
+                       f"red_points = {red_points}; blue_points = {blue_points}")
+            )
+            ortools_time_list.append(timer.timeit(number=num_runs) / num_runs)
 
         # Average the times for each algorithm and store in dictionaries
         if brute_time_list:
