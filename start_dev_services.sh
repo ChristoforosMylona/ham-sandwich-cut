@@ -25,7 +25,7 @@ fi
 
 # Start Flask app and capture logs
 cd flask_backend/ham_sandwich_cuts || exit
-export FLASK_APP=app.py  # Adjust if needed
+export FLASK_APP=app.py 
 export FLASK_ENV=development
 flask run 2>&1 | tee flask_output.log &  # Capture and display output
 FLASK_PID=$!

@@ -129,6 +129,7 @@ if __name__ == "__main__":
     start = 100
     end = 1500
     step = 25
+    num_runs = 3  # Default number of runs
     functions_to_test = {"brute", "ortools", "planar", "brute_no_numpy"}  # Default to all functions
 
     # Parse command-line arguments
@@ -139,12 +140,14 @@ if __name__ == "__main__":
             end = int(arg.split("=")[1])
         elif arg.startswith("step="):
             step = int(arg.split("=")[1])
+        elif arg.startswith("runs="):
+            num_runs = int(arg.split("=")[1])
         elif arg.startswith("functions="):
             functions_to_test = set(arg.split("=")[1].split(","))
 
     # Run the tests and collect the results
     brute_times, ortools_times, planar_cut_times, brute_no_numpy_times = test_algorithms(
-        start, end, step, functions_to_test=functions_to_test
+        start, end, step, num_runs=num_runs, functions_to_test=functions_to_test
     )
 
     # Save the results to a file
