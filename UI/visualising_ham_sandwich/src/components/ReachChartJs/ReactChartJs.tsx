@@ -46,15 +46,17 @@ import {
   ZoomOutMap,
 } from "@mui/icons-material";
 import { calculateLine } from "../api/CalculateLineService";
+import { handlePointsChange } from "./Handlers";
 import classes from "./ReactChartJs.module.scss";
-import {
-  handleAlgorithmChange,
-  handleBluePointsChange,
-  handleRedPointsChange,
-} from "./Handlers";
 
 ChartJS.register(...registerables, annotationPlugin, zoomPlugin);
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, TooltipJS);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  TooltipJS
+);
 const PADDING_FACTOR = 2;
 
 const ReactChartJs: React.FC = () => {
@@ -211,7 +213,7 @@ const ReactChartJs: React.FC = () => {
         showLine: true,
         fill: false,
         pointRadius: 0, // Hide points for the ham cut line
-        backgroundColor:"rgba(75, 192, 192, 1)"
+        backgroundColor: "rgba(75, 192, 192, 1)",
       });
     }
 
@@ -261,7 +263,6 @@ const ReactChartJs: React.FC = () => {
               showLine: true,
               fill: false,
               pointRadius: 0,
-        
             });
           }
         });
@@ -474,12 +475,19 @@ const ReactChartJs: React.FC = () => {
         callbacks: {
           label: function (context) {
             const raw = context.raw as { x: number; y: number };
-  
+
             // Check dataset label to determine how to display the information
-            if (context.dataset.label === "Ham Sandwich Cut" && currentStepData?.cut) {
+            if (
+              context.dataset.label === "Ham Sandwich Cut" &&
+              currentStepData?.cut
+            ) {
               // Display Ham Sandwich Cut equation
-              return `Ham Sandwich Cut: y = ${currentStepData.cut.slope.toFixed(2)}x + ${currentStepData.cut.intercept.toFixed(2)}`;
-            } else if (context.dataset.label === "Ham Sandwich Cut Dual Point") {
+              return `Ham Sandwich Cut: y = ${currentStepData.cut.slope.toFixed(
+                2
+              )}x + ${currentStepData.cut.intercept.toFixed(2)}`;
+            } else if (
+              context.dataset.label === "Ham Sandwich Cut Dual Point"
+            ) {
               // Display Dual Point coordinates
               return `Dual Point: (${raw.x.toFixed(2)}, ${raw.y.toFixed(2)})`;
             } else if (context.dataset.label?.includes("Interval")) {
@@ -487,7 +495,9 @@ const ReactChartJs: React.FC = () => {
               return `Interval: x = ${raw.x.toFixed(2)}`;
             } else {
               // Default label for other points
-              return `${context.dataset.label}: (${raw.x.toFixed(2)}, ${raw.y.toFixed(2)})`;
+              return `${context.dataset.label}: (${raw.x.toFixed(
+                2
+              )}, ${raw.y.toFixed(2)})`;
             }
           },
           // footer: (context) => {
@@ -510,9 +520,6 @@ const ReactChartJs: React.FC = () => {
       },
     },
   };
-  
-  
-  
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -579,8 +586,8 @@ const ReactChartJs: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log({redData});
-    console.log({blueData});
+    console.log({ redData });
+    console.log({ blueData });
   }, [redData, blueData]);
 
   useEffect(() => {
@@ -590,35 +597,45 @@ const ReactChartJs: React.FC = () => {
   // Memoized handlers
   const memoizedAlgorithmChange = useCallback(
     (e: React.ChangeEvent<{ value: unknown }>) =>
-      handleAlgorithmChange(
-        e,
-        setSelectedEndpoint,
-        redPoints,
-        setRedPoints,
-        bluePoints,
-        setBluePoints,
-        setRedWarning,
-        setBlueWarning
-      ),
-    [redPoints, bluePoints]
+      setSelectedEndpoint(e.target.value as string),
+    [setSelectedEndpoint]
   );
 
   const memoizedRedPointsChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) =>
-      handleRedPointsChange(e, selectedEndpoint, setRedPoints, setRedWarning),
+      handlePointsChange(e, selectedEndpoint, setRedPoints, setRedWarning),
     [selectedEndpoint]
   );
 
   const memoizedBluePointsChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) =>
-      handleBluePointsChange(
-        e,
-        selectedEndpoint,
-        setBluePoints,
-        setBlueWarning
-      ),
+      handlePointsChange(e, selectedEndpoint, setBluePoints, setBlueWarning),
     [selectedEndpoint]
   );
+
+  useEffect(() => {
+    if (selectedEndpoint === "ham-sandwich-mlp") {
+      if (redPoints > 50) {
+        setRedPoints(50);
+        setRedWarning(true);
+      }
+      if (bluePoints > 50) {
+        setBluePoints(50);
+        setBlueWarning(true);
+      }
+    } else {
+      setBlueWarning(false);
+      setRedWarning(false);
+    }
+  }, [
+    selectedEndpoint,
+    setRedPoints,
+    setBluePoints,
+    bluePoints,
+    redPoints,
+    setRedWarning,
+    setBlueWarning,
+  ]);
 
   return (
     <div className={classes.outerDiv}>
@@ -654,7 +671,7 @@ const ReactChartJs: React.FC = () => {
           <option value="default">Lo-Matoušek-Steiger</option>
           <option value="brute-force">Brute Force</option>
           <option value="ham-sandwich-mlp">MLP Method</option>
-          <option value="ham-sandwich-ilp">ILP Method</option>
+          {/* <option value="ham-sandwich-ilp">ILP Method</option> */}
         </TextField>
 
         {/* Title - Centered */}
@@ -694,7 +711,7 @@ const ReactChartJs: React.FC = () => {
               error={redWarning}
               inputProps={{
                 min: 1,
-                max: ["default", "brute-force"].includes(selectedEndpoint) ? 1000 : 50,
+                max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
               }}
               sx={{ width: "100%" }}
             />
@@ -715,7 +732,7 @@ const ReactChartJs: React.FC = () => {
               error={blueWarning}
               inputProps={{
                 min: 1,
-                max: selectedEndpoint !== "default" ? 50 : 10000,
+                max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
               }}
               sx={{ width: "100%" }}
             />
@@ -934,7 +951,9 @@ const ReactChartJs: React.FC = () => {
                           fontStyle: "italic",
                         }}
                       >
-                        It seems the calculated ham sandwich cut may be vertical. You may want to try other algorithms for better results.
+                        It seems the calculated ham sandwich cut may be
+                        vertical. You may want to try other algorithms for
+                        better results.
                       </Typography>
                     )}
                   </>
