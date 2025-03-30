@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from shapely.geometry import Point
 
 # from HamSandwich.PlotUtils import prepare_axis, plot_point_set
