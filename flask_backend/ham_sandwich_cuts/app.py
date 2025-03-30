@@ -287,7 +287,11 @@ def generate_random_points():
         print("Error:", traceback.format_exc())
         return jsonify({"error": "Unexpected error occurred."}), 500
     
-    
+
+def handler(request):
+    with app.app_context():
+        response = app.full_dispatch_request()
+        return response
 
 if __name__ == "__main__":
     app.run(debug=app.config["DEBUG"])

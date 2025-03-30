@@ -1,0 +1,24 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "UI/visualising_ham_sandwich/package.json",
+        "use": "@vercel/node"
+      },
+      {
+        "src": "flask_backend/ham_sandwich_cuts/app.py",
+        "use": "@vercel/python"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/api/(.*)",
+        "dest": "flask_backend/ham_sandwich_cuts/app.py"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "UI/visualising_ham_sandwich/dist/$1"
+      }
+    ]
+  }
+  
