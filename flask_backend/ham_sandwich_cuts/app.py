@@ -280,7 +280,6 @@ def get_sample_file(file_type):
         # Get the filename based on requested type
         filename = file_map.get(file_type)
         if not filename:
-            logging.error("Invalid file type requested: %s\t\t\t searched at path %s", file_type, sample_dir)
             return jsonify({"error": "Invalid file type"}), 400
 
         # Construct the full file path
@@ -288,6 +287,7 @@ def get_sample_file(file_type):
 
         # Check if file exists
         if not os.path.exists(file_path):
+            logging.error("File path not found: %s", file_path)
             return jsonify({"error": "File not found"}), 404
 
         # Serve the file as a response
