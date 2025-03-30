@@ -27,8 +27,8 @@ def find_line_through_points_ortools_extended(A, B, M=1e5, eps=1e-4):
     B = np.array(B)
 
     # Compute bounds for x and y.
-    min_x = np.min(np.min(A[:, 0]), np.min(B[:, 0]))
-    max_x = np.max(np.max(A[:, 0]), np.max(B[:, 0]))
+    min_x = np.min([np.min(A[:, 0]), np.min(B[:, 0])])
+    max_x = np.max([np.max(A[:, 0]), np.max(B[:, 0])])
 
     # Compute slope (m) bounds using broadcasting over all pairs (A, B)
     xA = A[:, 0][:, np.newaxis]  # shape (nA, 1)
