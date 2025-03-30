@@ -28,7 +28,7 @@ if flask_env != "production":
     print("CORS enabled for development env")
 else:
     # In production, you can restrict origins or leave it empty (disallow all)
-    CORS(app)
+    CORS(app, origins=["https://ham-sandwich-cut.vercel.app"])
     print("CORS enabled for prod env")
 
 
