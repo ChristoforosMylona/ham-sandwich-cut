@@ -22,7 +22,7 @@ from flask_backend.ham_sandwich_cuts.MLP.HamSandwichMLP import find_line_through
 
 import timeit
 
-def test_algorithms(start=100, end=1500, step=25, num_runs=3, functions_to_test=None):
+def test_algorithms(start=5, end=500, step=25, num_runs=3, functions_to_test=None):
     # Collect results for each algorithm as dictionaries
     brute_times = {}
     ortools_times = {}
