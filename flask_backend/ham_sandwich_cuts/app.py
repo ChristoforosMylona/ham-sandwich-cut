@@ -267,7 +267,7 @@ def get_sample_file(file_type):
         file_type = file_type.lower()
 
         # Define the directory containing sample files
-        sample_dir = os.path.join(os.getcwd(), "sample_files")
+        sample_dir = os.path.abspath(os.path.join(os.getcwd(), "sample_files"))
 
         # Map file types to filenames
         file_map = {
