@@ -266,8 +266,11 @@ def get_sample_file(file_type):
         # Get the requested file type from the URL parameter
         file_type = file_type.lower()
 
+        # Get the directory where the current app.py is located
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+
         # Define the directory containing sample files
-        sample_dir = os.path.abspath(os.path.join(os.getcwd(), "sample_files"))
+        sample_dir = os.path.join(app_dir, "sample_files")
 
         # Map file types to filenames
         file_map = {
