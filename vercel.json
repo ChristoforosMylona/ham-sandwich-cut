@@ -3,7 +3,7 @@
   "builds": [
     {
       "src": "UI/visualising_ham_sandwich/package.json",
-      "use": "@vercel/vite"
+      "use": "@vercel/static-build"
     }
   ],
   "routes": [
