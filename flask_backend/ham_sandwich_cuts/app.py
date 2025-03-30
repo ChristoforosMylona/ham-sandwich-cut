@@ -14,10 +14,8 @@ from ILP.HamSandwichILP import find_line_through_points_ILP
 from MLP.HamSandwichMLP import find_line_through_points_ortools_extended
 from BruteForce.HamSandwichBruteForce import (
     find_line_through_points_with_dual_intersection_brute,
-    find_line_through_points_with_dual_intersection_brute_no_numpy
+    find_line_through_points_with_dual_intersection_brute_no_numpy,
 )
-
-import numpy as np
 
 app = Flask(__name__)
 
@@ -34,6 +32,9 @@ else:
     print("CORS enabled for prod env")
 
 
+MAX_ARRAY_SIZE = 50
+
+
 @app.route("/ham-sandwich-viz/", methods=["POST"])
 def calculate_ham_cut_viz():
     try:
@@ -46,13 +47,17 @@ def calculate_ham_cut_viz():
         if not isinstance(blue_points, list) or not isinstance(red_points, list):
             return jsonify({"error": "Invalid input format. Arrays expected."}), 400
 
+        # Check if the arrays exceed the maximum allowed size
+        if len(blue_points) > MAX_ARRAY_SIZE or len(red_points) > MAX_ARRAY_SIZE:
+            return jsonify({"error": "Input arrays are too large"}), 413
+
         # Create the HamInstance and calculate the sandwich cut
         NewCut = HamInstance(
             red_points=red_points, blue_points=blue_points, plot_constant=1
         )
         LPC = LinearPlanarCut(0.5)
         result = LPC.cut(NewCut)
-        
+
         # Trigger garbage collection explicitly after the work is done
         gc.collect()
 
@@ -66,8 +71,12 @@ def calculate_ham_cut_viz():
         else:
             # Non-vertical line found
             slope, intercept = result[1]
-            return jsonify({"is_vertical": False, "slope": slope, "y_intercept": intercept}), 200
-        
+            return (
+                jsonify(
+                    {"is_vertical": False, "slope": slope, "y_intercept": intercept}
+                ),
+                200,
+            )
 
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         return jsonify({"error": "Invalid input or processing error: " + str(e)}), 400
@@ -87,6 +96,10 @@ def teach_ham_cut_viz():
         # Validate inputs
         if not isinstance(blue_points, list) or not isinstance(red_points, list):
             return jsonify({"error": "Invalid input format. Arrays expected."}), 400
+
+        # Check if the arrays exceed the maximum allowed size
+        if len(blue_points) > MAX_ARRAY_SIZE or len(red_points) > MAX_ARRAY_SIZE:
+            return jsonify({"error": "Input arrays are too large"}), 413
 
         steps_taken = []
 
@@ -111,40 +124,49 @@ def teach_ham_cut_viz():
         return jsonify({"error": "unexpected error"}), 500
 
 
-@app.route("/ham-sandwich-ilp/", methods=["POST"])
-def calculate_ham_cut_ilp():
-    try:
-        # Parse JSON data
-        data = request.get_json()
-        blue_points = data.get("bluePoints", [])
-        red_points = data.get("redPoints", [])
+# @app.route("/ham-sandwich-ilp/", methods=["POST"])
+# def calculate_ham_cut_ilp():
+#     try:
+#         # Parse JSON data
+#         data = request.get_json()
+#         blue_points = data.get("bluePoints", [])
+#         red_points = data.get("redPoints", [])
 
-        # Validate inputs
-        if not isinstance(blue_points, list) or not isinstance(red_points, list):
-            return jsonify({"error": "Invalid input format. Arrays expected."}), 400
+#         # Validate inputs
+#         if not isinstance(blue_points, list) or not isinstance(red_points, list):
+#             return jsonify({"error": "Invalid input format. Arrays expected."}), 400
 
-        # Call the updated line finding function
-        result = find_line_through_points_ILP(red_points, blue_points)
+#         # Check if the arrays exceed the maximum allowed size
+#         if len(blue_points) > MAX_ARRAY_SIZE or len(red_points) > MAX_ARRAY_SIZE:
+#             return jsonify({"error": "Input arrays are too large"}), 413
 
-        if result is None:
-            return jsonify({"error": "No feasible line found."}), 400
+#         # Call the updated line finding function
+#         result = find_line_through_points_ILP(red_points, blue_points)
 
-        # Prepare the response based on the result (vertical or non-vertical)
-        if result[0] == "vertical":
-            # Vertical line found
-            return jsonify({"is_vertical": True, "x_intercept": result[1]}), 200
-        else:
-            # Non-vertical line found
-            slope, intercept = result[1]
-            return jsonify({"is_vertical": False, "slope": slope, "y_intercept": intercept}), 200
+#         if result is None:
+#             return jsonify({"error": "No feasible line found."}), 400
 
-    except (json.JSONDecodeError, KeyError, ValueError) as e:
-        return jsonify({"error": "Invalid input or processing error: " + str(e)}), 400
-    except Exception as e:
-        print("Error:", traceback.format_exc())
-        return jsonify({"error": "unexpected error"}), 500
+#         # Prepare the response based on the result (vertical or non-vertical)
+#         if result[0] == "vertical":
+#             # Vertical line found
+#             return jsonify({"is_vertical": True, "x_intercept": result[1]}), 200
+#         else:
+#             # Non-vertical line found
+#             slope, intercept = result[1]
+#             return (
+#                 jsonify(
+#                     {"is_vertical": False, "slope": slope, "y_intercept": intercept}
+#                 ),
+#                 200,
+#             )
 
-    
+#     except (json.JSONDecodeError, KeyError, ValueError) as e:
+#         return jsonify({"error": "Invalid input or processing error: " + str(e)}), 400
+#     except Exception as e:
+#         print("Error:", traceback.format_exc())
+#         return jsonify({"error": "unexpected error"}), 500
+
+
 @app.route("/ham-sandwich-mlp/", methods=["POST"])
 def calculate_ham_cut_mlp():
     try:
@@ -157,6 +179,10 @@ def calculate_ham_cut_mlp():
         if not isinstance(blue_points, list) or not isinstance(red_points, list):
             return jsonify({"error": "Invalid input format. Arrays expected."}), 400
 
+        # Check if the arrays exceed the maximum allowed size
+        if len(blue_points) > MAX_ARRAY_SIZE or len(red_points) > MAX_ARRAY_SIZE:
+            return jsonify({"error": "Input arrays are too large"}), 413
+
         # Call the find_line_through_points_ortools_extended function
         result = find_line_through_points_ortools_extended(red_points, blue_points)
 
@@ -164,7 +190,6 @@ def calculate_ham_cut_mlp():
         if result is None:
             return jsonify({"error": "No feasible line found."}), 400
 
-        
         # If result is vertical
         if result[0] == "vertical":
             return jsonify({"is_vertical": True, "x_intercept": result[1]}), 200
@@ -172,7 +197,12 @@ def calculate_ham_cut_mlp():
         # If result is non-vertical
         elif result[0] == "non-vertical":
             slope, intercept = result[1]
-            return jsonify({"is_vertical": False, "slope": slope, "y_intercept": intercept}), 200
+            return (
+                jsonify(
+                    {"is_vertical": False, "slope": slope, "y_intercept": intercept}
+                ),
+                200,
+            )
 
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         return jsonify({"error": "Invalid input or processing error: " + str(e)}), 400
@@ -193,12 +223,14 @@ def brute_force():
         if not isinstance(blue_points, list) or not isinstance(red_points, list):
             return jsonify({"error": "Invalid input format. Arrays expected."}), 400
 
+        # Check if the arrays exceed the maximum allowed size
+        if len(blue_points) > MAX_ARRAY_SIZE or len(red_points) > MAX_ARRAY_SIZE:
+            return jsonify({"error": "Input arrays are too large"}), 413
+
         result = find_line_through_points_with_dual_intersection_brute(
             red_points, blue_points
         )
-        
-        
-        
+
         if result is None:
             return jsonify({"error": "No feasible line found."}), 400
 
@@ -209,7 +241,12 @@ def brute_force():
         else:
             # Non-vertical line found
             slope, intercept = result[1]
-            return jsonify({"is_vertical": False, "slope": slope, "y_intercept": intercept}), 200
+            return (
+                jsonify(
+                    {"is_vertical": False, "slope": slope, "y_intercept": intercept}
+                ),
+                200,
+            )
 
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         return jsonify({"error": "Invalid input or processing error: " + str(e)}), 400
@@ -268,27 +305,29 @@ def generate_random_points():
         red_points = int(red_points)
         blue_points = int(blue_points)
 
+        if red_points > MAX_ARRAY_SIZE or blue_points > MAX_ARRAY_SIZE:
+            return jsonify({"error": "Arrays size request is too large"}), 413
+
         # Ensure non-negative values
         if red_points < 0 or blue_points < 0:
-            return jsonify({"error": "Point counts must be non-negative integers."}), 400
+            return (
+                jsonify({"error": "Point counts must be non-negative integers."}),
+                400,
+            )
 
-        blue_data = [{"x": point.x, "y": point.y} for point in random_point_set(blue_points)]
-        red_data = [{"x": point.x, "y": point.y} for point in random_point_set(red_points)]
+        blue_data = [
+            {"x": point.x, "y": point.y} for point in random_point_set(blue_points)
+        ]
+        red_data = [
+            {"x": point.x, "y": point.y} for point in random_point_set(red_points)
+        ]
 
-        return jsonify({
-            "redData": red_data,
-            "blueData": blue_data
-        }), 200
+        return jsonify({"redData": red_data, "blueData": blue_data}), 200
 
     except Exception as e:
         print("Error:", traceback.format_exc())
         return jsonify({"error": "Unexpected error occurred."}), 500
-    
 
-def handler(request):
-    with app.app_context():
-        response = app.full_dispatch_request()
-        return response
 
 if __name__ == "__main__":
     app.run(debug=app.config["DEBUG"])
