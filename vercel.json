@@ -7,9 +7,6 @@
     }
   ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "UI/visualising_ham_sandwich/dist/$1"
-    }
+    { "src": "/(.*)", "dest": "/UI/visualising_ham_sandwich/dist/index.html" }
   ]
 }
