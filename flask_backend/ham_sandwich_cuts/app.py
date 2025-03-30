@@ -1,3 +1,4 @@
+import logging
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
@@ -82,6 +83,7 @@ def calculate_ham_cut_viz():
         return jsonify({"error": "Invalid input or processing error: " + str(e)}), 400
     except Exception as e:
         print("Error:", traceback.format_exc())
+        logging.error("Error generating random points: %s", str(e))
         return jsonify({"error": "unexpected error"}), 500
 
 
@@ -121,6 +123,7 @@ def teach_ham_cut_viz():
         return jsonify({"error": "Invalid input or processing error: " + str(e)}), 400
     except Exception as e:
         print("Error:", traceback.format_exc())
+        logging.error("Error generating random points: %s", str(e))
         return jsonify({"error": "unexpected error"}), 500
 
 
@@ -208,6 +211,7 @@ def calculate_ham_cut_mlp():
         return jsonify({"error": "Invalid input or processing error: " + str(e)}), 400
     except Exception as e:
         print("Error:", traceback.format_exc())
+        logging.error("Error generating random points: %s", str(e))
         return jsonify({"error": "unexpected error"}), 500
 
 
@@ -252,6 +256,7 @@ def brute_force():
         return jsonify({"error": "Invalid input or processing error: " + str(e)}), 400
     except Exception as e:
         print("Error:", traceback.format_exc())
+        logging.error("Error generating random points: %s", str(e))
         return jsonify({"error": "unexpected error"}), 500
 
 
@@ -289,6 +294,7 @@ def get_sample_file(file_type):
 
     except Exception as e:
         print("Error:", traceback.format_exc())
+        logging.error("Error generating random points: %s", str(e))
         return jsonify({"error": "Unexpected error occurred"}), 500
 
 
@@ -326,6 +332,7 @@ def generate_random_points():
 
     except Exception as e:
         print("Error:", traceback.format_exc())
+        logging.error("Error generating random points: %s", str(e))
         return jsonify({"error": "Unexpected error occurred."}), 500
 
 
