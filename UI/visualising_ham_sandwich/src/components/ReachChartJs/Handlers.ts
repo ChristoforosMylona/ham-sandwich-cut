@@ -40,7 +40,8 @@ export const handlePointsChange = (
   setPoints: Dispatch<SetStateAction<number>>,
   setWarning: Dispatch<SetStateAction<boolean>>
 ) => {
-  const maxPoints = selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50;
+  // const maxPoints = selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50;
+  const maxPoints = 50;
   const value = Math.min(Math.max(1, Number(e.target.value)), maxPoints);
 
   setPoints(value);
