@@ -76,7 +76,7 @@ def test_algorithms(start=5, end=500, step=25, num_runs=3, functions_to_test=Non
 
 
         # Placeholder for ortools (not implemented in this example)
-        if "ortools" in functions_to_test:
+        if "ortools" in functions_to_test and size <= 50:
             timer = timeit.Timer(
                 stmt="find_line_through_points_ortools_extended(red_points, blue_points)",
                 setup=("from flask_backend.ham_sandwich_cuts.MLP.HamSandwichMLP import find_line_through_points_ortools_extended; "
