@@ -711,7 +711,8 @@ const ReactChartJs: React.FC = () => {
               error={redWarning}
               inputProps={{
                 min: 1,
-                max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
+                // max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
+                max: 50,
               }}
               sx={{ width: "100%" }}
             />
@@ -732,7 +733,8 @@ const ReactChartJs: React.FC = () => {
               error={blueWarning}
               inputProps={{
                 min: 1,
-                max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
+                // max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
+                max: 50,
               }}
               sx={{ width: "100%" }}
             />

@@ -7,18 +7,11 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 # Dynamically determine the project path and add it to sys.path
-project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if project_path not in sys.path:
     sys.path.append(project_path)
 
-from flask_backend.ham_sandwich_cuts.BruteForce.HamSandwichBruteForce import (
-    find_line_through_points_with_dual_intersection_brute,
-    find_line_through_points_with_dual_intersection_brute_no_numpy,
-)
-from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.Cuts import LinearPlanarCut
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.GeomUtils import random_point_set
-from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.IOUtils import HamInstance
-from flask_backend.ham_sandwich_cuts.MLP.HamSandwichMLP import find_line_through_points_ortools_extended
 
 import timeit
 
@@ -41,6 +34,20 @@ def test_algorithms(start=5, end=500, step=25, num_runs=3, functions_to_test=Non
         # Generate random points of the given size (setup code)
         red_points = [[point.x, point.y] for point in random_point_set(size)]
         blue_points = [[point.x, point.y] for point in random_point_set(size)]
+
+        # Test planar cut
+        if "planar" in functions_to_test:
+            timer = timeit.Timer(
+                stmt="LPC.cut(NewCut)",
+                setup=(
+                    "from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.Cuts import LinearPlanarCut; "
+                    "from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.IOUtils import HamInstance; "
+                    f"red_points = {red_points}; blue_points = {blue_points}; "
+                    "NewCut = HamInstance(red_points=red_points, blue_points=blue_points, plot_constant=1); "
+                    "LPC = LinearPlanarCut(0.5)"
+                ),
+            )
+            planar_cut_time_list.append(timer.timeit(number=num_runs) / num_runs)
 
         # Test brute force algorithm
         if "brute" in functions_to_test:
@@ -66,19 +73,7 @@ def test_algorithms(start=5, end=500, step=25, num_runs=3, functions_to_test=Non
             )
             brute_no_numpy_time_list.append(timer.timeit(number=num_runs) / num_runs)
 
-        # Test planar cut
-        if "planar" in functions_to_test:
-            timer = timeit.Timer(
-                stmt="LPC.cut(NewCut)",
-                setup=(
-                    "from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.Cuts import LinearPlanarCut; "
-                    "from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.IOUtils import HamInstance; "
-                    f"red_points = {red_points}; blue_points = {blue_points}; "
-                    "NewCut = HamInstance(red_points=red_points, blue_points=blue_points, plot_constant=1); "
-                    "LPC = LinearPlanarCut(0.5)"
-                ),
-            )
-            planar_cut_time_list.append(timer.timeit(number=num_runs) / num_runs)
+
 
         # Placeholder for ortools (not implemented in this example)
         if "ortools" in functions_to_test:

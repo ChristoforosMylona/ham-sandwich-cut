@@ -146,7 +146,7 @@ class LinearPlanarCut:
                         
             dual_point_1 = get_dual_point(red_med_linestring)
             dual_point_2 = get_dual_point(blue_med_linestring)
-            print(dual_point_1, dual_point_2)
+            # print(dual_point_1, dual_point_2)
             
             # Check if the two dual points are on a vertical line (i.e., the x-coordinates are the same)
             if dual_point_1[0] == dual_point_2[0]:  # x-coordinates are the same
