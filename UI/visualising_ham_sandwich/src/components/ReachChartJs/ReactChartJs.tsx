@@ -702,48 +702,58 @@ const ReactChartJs: React.FC = () => {
           marginTop={0}
         >
           {/* Red Points Input with Fixed Helper Text */}
-          <Box position="relative" minWidth={150}>
-            <TextField
-              label="Number of Red Points"
-              type="number"
-              value={redPoints}
-              onChange={memoizedRedPointsChange}
-              error={redWarning}
-              inputProps={{
-                min: 1,
-                // max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
-                max: 50,
-              }}
-              sx={{ width: "100%" }}
-            />
-            {redWarning && (
-              <FormHelperText error sx={{ position: "absolute", bottom: -20 }}>
-                ⚠️ Max 50 points
-              </FormHelperText>
-            )}
-          </Box>
+          <Tooltip title="Max 50 points per set due to limited hardware">
+            <Box position="relative" minWidth={150}>
+              <TextField
+                label="Number of Red Points"
+                type="number"
+                value={redPoints}
+                onChange={memoizedRedPointsChange}
+                error={redWarning}
+                inputProps={{
+                  min: 1,
+                  // max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
+                  max: 50,
+                }}
+                sx={{ width: "100%" }}
+              />
+              {redWarning && (
+                <FormHelperText
+                  error
+                  sx={{ position: "absolute", bottom: -20 }}
+                >
+                  ⚠️ Max 50 points
+                </FormHelperText>
+              )}
+            </Box>
+          </Tooltip>
 
-          {/* Blue Points Input with Fixed Helper Text */}
-          <Box position="relative" minWidth={150}>
-            <TextField
-              label="Number of Blue Points"
-              type="number"
-              value={bluePoints}
-              onChange={memoizedBluePointsChange}
-              error={blueWarning}
-              inputProps={{
-                min: 1,
-                // max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
-                max: 50,
-              }}
-              sx={{ width: "100%" }}
-            />
-            {blueWarning && (
-              <FormHelperText error sx={{ position: "absolute", bottom: -20 }}>
-                ⚠️ Max 50 points
-              </FormHelperText>
-            )}
-          </Box>
+          <Tooltip title="Max 50 points per set due to limited hardware">
+            {/* Blue Points Input with Fixed Helper Text */}
+            <Box position="relative" minWidth={150}>
+              <TextField
+                label="Number of Blue Points"
+                type="number"
+                value={bluePoints}
+                onChange={memoizedBluePointsChange}
+                error={blueWarning}
+                inputProps={{
+                  min: 1,
+                  // max: selectedEndpoint != "ham-sandwich-mlp" ? 1000 : 50,
+                  max: 50,
+                }}
+                sx={{ width: "100%" }}
+              />
+              {blueWarning && (
+                <FormHelperText
+                  error
+                  sx={{ position: "absolute", bottom: -20 }}
+                >
+                  ⚠️ Max 50 points
+                </FormHelperText>
+              )}
+            </Box>
+          </Tooltip>
 
           {/* Randomize Button */}
           <Button
