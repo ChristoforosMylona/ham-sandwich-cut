@@ -1,18 +1,21 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import DownloadIcon from "@mui/icons-material/Download";
 import { Button, ButtonGroup, Menu, MenuItem } from "@mui/material";
 import React, { ChangeEvent, MouseEvent, useState } from "react";
 import { downloadFile } from "../api/api";
 
 interface FileUploadDownloadButtonProps {
   handleFileUpload: (e: ChangeEvent<HTMLInputElement>) => void;
+  handleDownloadCurrentPointSet: () => void; // Function to download the current point set
 }
 
 const FileUploadDownloadButton: React.FC<FileUploadDownloadButtonProps> = ({
   handleFileUpload,
+  handleDownloadCurrentPointSet,
 }) => {
-
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
   // Open dropdown menu
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -46,7 +49,6 @@ const FileUploadDownloadButton: React.FC<FileUploadDownloadButtonProps> = ({
             "&:hover": {
               backgroundColor: "primary.dark",
             },
-            // height:"3rem",
           }}
         >
           Upload
@@ -66,11 +68,10 @@ const FileUploadDownloadButton: React.FC<FileUploadDownloadButtonProps> = ({
           sx={{
             color: "text.primary",
             backgroundColor: "primary.main",
-            paddingLeft: "0",  // Remove extra padding to the left of the icon
+            paddingLeft: "0", // Remove extra padding to the left of the icon
             "&:hover": {
               backgroundColor: "primary.dark",
             },
-            // height:"3rem",
           }}
         />
       </ButtonGroup>
@@ -85,6 +86,15 @@ const FileUploadDownloadButton: React.FC<FileUploadDownloadButtonProps> = ({
         </MenuItem>
         <MenuItem onClick={() => handleDownloadSample("excel")}>
           Download Sample Excel
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose();
+            handleDownloadCurrentPointSet(); // Call the function to download the current point set
+          }}
+        >
+          <DownloadIcon sx={{ marginRight: 1 }} />
+          Download Current Point Set
         </MenuItem>
       </Menu>
     </div>

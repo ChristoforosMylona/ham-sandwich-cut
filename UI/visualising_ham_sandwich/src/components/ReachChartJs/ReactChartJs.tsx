@@ -521,6 +521,32 @@ const ReactChartJs: React.FC = () => {
     },
   };
 
+  const handleDownloadCurrentPointSet = () => {
+    // Create an object containing the current red and blue points
+    const currentPointSet = {
+      redPoints: redData, // Array of red points
+      bluePoints: blueData, // Array of blue points
+    };
+
+    // Convert the object to a JSON string
+    const jsonString = JSON.stringify(currentPointSet, null, 2);
+
+    // Create a Blob from the JSON string
+    const blob = new Blob([jsonString], { type: "application/json" });
+
+    // Create a URL for the Blob
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary anchor element to trigger the download
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "current_point_set.json"; // File name for the downloaded file
+    link.click();
+
+    // Revoke the Blob URL to free up memory
+    URL.revokeObjectURL(url);
+  };
+
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -771,7 +797,10 @@ const ReactChartJs: React.FC = () => {
           </Button>
 
           {/* File Upload & Download */}
-          <FileUploadDownloadButton handleFileUpload={handleFileUpload} />
+          <FileUploadDownloadButton
+            handleFileUpload={handleFileUpload}
+            handleDownloadCurrentPointSet={handleDownloadCurrentPointSet}
+          />
         </Box>
       </Collapse>
 
