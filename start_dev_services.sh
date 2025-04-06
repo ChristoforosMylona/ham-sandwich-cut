@@ -15,9 +15,9 @@ trap cleanup SIGINT
 
 # Activate virtual environment
 if [[ "$OS" == "Linux" || "$OS" == "Darwin" ]]; then
-    source flask_backend/venv/bin/activate
+    source venv/bin/activate
 elif [[ "$OS" == "CYGWIN"* || "$OS" == "MINGW"* || "$OS" == "MSYS"* ]]; then
-    source flask_backend/venv/Scripts/activate
+    source venv/Scripts/activate
 else
     echo "Unsupported OS"
     exit 1
