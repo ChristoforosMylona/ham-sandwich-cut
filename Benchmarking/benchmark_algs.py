@@ -9,15 +9,15 @@ import json
 from matplotlib import pyplot as plt
 import numpy as np
 
+
+# Dynamically add the `src` folder to the Python path
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if src_path not in sys.path:
+    sys.path.append(src_path)
+
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.Cuts import LinearPlanarCut
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.IOUtils import HamInstance
 from flask_backend.ham_sandwich_cuts.MLP.HamSandwichMLP import find_line_through_points_ortools_extended
-
-# Dynamically determine the project path and add it to sys.path
-project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if project_path not in sys.path:
-    sys.path.append(project_path)
-
 from flask_backend.ham_sandwich_cuts.BruteForce.HamSandwichBruteForce import find_line_through_points_with_dual_intersection_brute, find_line_through_points_with_dual_intersection_brute_no_numpy
 from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.GeomUtils import (
     random_point_set,
