@@ -3,13 +3,9 @@ import statistics
 import sys
 import os
 import time
-import timeit
 from datetime import datetime
 import json
 from matplotlib import pyplot as plt
-import numpy as np
-
-
 # Dynamically add the `src` folder to the Python path
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if src_path not in sys.path:
