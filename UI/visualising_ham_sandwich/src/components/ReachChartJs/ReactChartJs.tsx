@@ -696,7 +696,7 @@ const ReactChartJs: React.FC = () => {
         >
           <option value="default">Lo-Matoušek-Steiger</option>
           <option value="brute-force">Brute Force</option>
-          <option value="ham-sandwich-mlp">MLP Method</option>
+          <option value="ham-sandwich-mlp">MILP Method</option>
           {/* <option value="ham-sandwich-ilp">ILP Method</option> */}
         </TextField>
 

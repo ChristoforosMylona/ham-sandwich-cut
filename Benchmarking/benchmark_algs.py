@@ -20,39 +20,82 @@ from flask_backend.ham_sandwich_cuts.ExistingProjects.Existing_Project_Viz.GeomU
 )
 
 
-def load_or_generate_points(file_path, size, num_runs):
+def load_or_generate_points(file_path, size, num_runs, chunk_size_mb=100):
     """
     Load points from a file or generate new ones if not enough exist for the given size and num_runs.
+    If the file exceeds the chunk size, split it into smaller chunks.
 
     Parameters:
         file_path (str): Path to the file storing the points.
         size (int): Number of points per set.
         num_runs (int): Number of sets required.
+        chunk_size_mb (int): Maximum size of each chunk in megabytes.
 
     Returns:
         list: A list of dictionaries containing red and blue points.
     """
-    # Ensure the file exists and load existing data
-    if not os.path.exists(file_path):
-        points_data = {}
-    else:
-        with open(file_path, "r") as f:
-            points_data = json.load(f)
+    # Helper function to calculate file size in MB
+    def get_file_size_in_mb(path):
+        return os.path.getsize(path) / (1024 * 1024)
+
+    # Load existing data from chunks
+    points_data = {}
+    chunk_index = 1
+    while os.path.exists(f"{file_path}_chunk_{chunk_index}.json"):
+        with open(f"{file_path}_chunk_{chunk_index}.json", "r") as f:
+            chunk_data = json.load(f)
+            points_data.update(chunk_data)
+        chunk_index += 1
 
     # Check if there are enough points for the given size
     if str(size) not in points_data or len(points_data[str(size)]) < num_runs:
         # Generate additional points if needed
         existing_points = points_data.get(str(size), [])
         additional_runs = num_runs - len(existing_points)
-        for _ in range(additional_runs):
-            red_points = [[point.x, point.y] for point in random_point_set(size)]
-            blue_points = [[point.x, point.y] for point in random_point_set(size)]
-            existing_points.append({"red_points": red_points, "blue_points": blue_points})
+        try:
+            for _ in range(additional_runs):
+                red_points = [[point.x, point.y] for point in random_point_set(size)]
+                blue_points = [[point.x, point.y] for point in random_point_set(size)]
+                existing_points.append({"red_points": red_points, "blue_points": blue_points})
 
-        # Update the file with the new points
-        points_data[str(size)] = existing_points
-        with open(file_path, "w") as f:
-            json.dump(points_data, f, indent=4)
+            # Update the in-memory data
+            points_data[str(size)] = existing_points
+
+            # Write data back to chunks
+            chunk_index = 1
+            chunk_data = {}
+            for key, value in points_data.items():
+                chunk_data[key] = value
+                # Check if the chunk size exceeds the limit
+                temp_file_path = f"{file_path}_chunk_{chunk_index}.json"
+                with open(temp_file_path, "w") as temp_file:
+                    json.dump(chunk_data, temp_file, indent=4)
+                if get_file_size_in_mb(temp_file_path) > chunk_size_mb:
+                    # Finalize the current chunk and start a new one
+                    chunk_index += 1
+                    chunk_data = {}
+            # Write the remaining data to the last chunk
+            if chunk_data:
+                with open(f"{file_path}_chunk_{chunk_index}.json", "w") as f:
+                    json.dump(chunk_data, f, indent=4)
+
+        except KeyboardInterrupt:
+            print("\nKeyboardInterrupt detected. Finishing writing to the file before exiting...")
+            # Write remaining data to chunks before exiting
+            chunk_index = 1
+            chunk_data = {}
+            for key, value in points_data.items():
+                chunk_data[key] = value
+                temp_file_path = f"{file_path}_chunk_{chunk_index}.json"
+                with open(temp_file_path, "w") as temp_file:
+                    json.dump(chunk_data, temp_file, indent=4)
+                if get_file_size_in_mb(temp_file_path) > chunk_size_mb:
+                    chunk_index += 1
+                    chunk_data = {}
+            if chunk_data:
+                with open(f"{file_path}_chunk_{chunk_index}.json", "w") as f:
+                    json.dump(chunk_data, f, indent=4)
+            raise  # Re-raise the exception to allow the program to exit
 
     return points_data[str(size)][:num_runs]
 
@@ -166,10 +209,10 @@ def test_algorithms(start=5, end=500, step=25, num_runs=3, functions_to_test=Non
     )
 
 
-def save_results_to_file(results):
+def save_results_to_file(results, start, end, num_runs):
     # Generate a filename with the current datetime
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    results_filename = f"{timestamp}.json"
+    results_filename = f"{timestamp}-{start}-{end}-{num_runs}.json"
 
     # Define the Results and Points directory paths
     results_dir = os.path.join(os.path.dirname(__file__), "Results")
@@ -208,22 +251,22 @@ def plot_times(brute_times, ortools_times, planar_cut_times, brute_no_numpy_time
     if brute_times:
         plt.errorbar(
             brute_sizes, brute_means, yerr=brute_stdevs if show_stderr else None, label="Brute Force",
-            color="red", marker="o", capsize=5, linestyle="--"
+            color="red", marker="o", capsize=5, linestyle="-"
         )
     if planar_cut_times:
         plt.errorbar(
             planar_cut_sizes, planar_cut_means, yerr=planar_cut_stdevs if show_stderr else None, label="Linear Planar Cut",
-            color="green", marker="^", capsize=5, linestyle="--"
+            color="green", marker="^", capsize=5, linestyle="-"
         )
     if brute_no_numpy_times:
         plt.errorbar(
             brute_no_numpy_sizes, brute_no_numpy_means, yerr=brute_no_numpy_stdevs if show_stderr else None, label="Brute Force (No NumPy)",
-            color="purple", marker="x", capsize=5, linestyle="--"
+            color="purple", marker="x", capsize=5, linestyle="-"
         )
     if ortools_times:
         plt.errorbar(
             ortools_sizes, ortools_means, yerr=ortools_stdevs if show_stderr else None, label="ORTools Extended",
-            color="blue", marker="s", capsize=5, linestyle="--"
+            color="blue", marker="s", capsize=5, linestyle="-"
         )
 
     # Add labels, title, and legend
@@ -284,7 +327,7 @@ if __name__ == "__main__":
         "planar_cut_times": planar_cut_times,
         "brute_no_numpy_times": brute_no_numpy_times,
     }
-    save_results_to_file(results)
+    save_results_to_file(results, args.start, args.end, args.num_runs)
 
     # Plot the results
     plot_times(brute_times, ortools_times, planar_cut_times, brute_no_numpy_times, show_stderr=args.show_stderr)

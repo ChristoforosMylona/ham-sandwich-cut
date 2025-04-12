@@ -121,3 +121,7 @@ To stop both the Flask and React servers, simply press `Ctrl+C` in the terminal 
 - **For production deployments, refer to the Docker-based setup** or follow proper deployment instructions.
 
 That's it! You should now have the project running locally in development mode using the provided script.
+
+## Additional Resources
+
+[Benchmarking and Plotting Guide](Benchmarking/README.md)
