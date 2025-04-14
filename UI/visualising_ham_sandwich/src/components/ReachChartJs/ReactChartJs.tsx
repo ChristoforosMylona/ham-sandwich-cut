@@ -446,6 +446,31 @@ const ReactChartJs: React.FC = () => {
         round: 3,
         dragX: true,
         dragY: true,
+        showTooltip: true,
+        onDragStart: function (
+          e: TouchEvent | MouseEvent,
+          _datasetIndex: number,
+          _index: number,
+          _value: any
+        ): boolean {
+          if ("touches" in e && e.type.includes("touch")) {
+            let isDragging = false;
+
+            const longPressTimer = setTimeout(() => {
+              isDragging = true;
+            }, 500);
+
+            // Add touch end listener to clear timer
+            const touchEndHandler = () => {
+              clearTimeout(longPressTimer);
+              document.removeEventListener("touchend", touchEndHandler);
+            };
+            document.addEventListener("touchend", touchEndHandler);
+
+            return isDragging;
+          }
+          return true; // Allow immediate drag on desktop
+        },
         onDragEnd: () => {
           memoizedCalculateLine(); // Recalculate on drag end
           if (teachMode) {
@@ -500,10 +525,6 @@ const ReactChartJs: React.FC = () => {
               )}, ${raw.y.toFixed(2)})`;
             }
           },
-          // footer: (context) => {
-          //   const arrayLines = ["Line1", "Line2", "Line3"];
-          //   return arrayLines;
-          // }
         },
       },
     },
@@ -1033,9 +1054,6 @@ const ReactChartJs: React.FC = () => {
                           fontStyle: "italic",
                         }}
                       >
-                        It seems the calculated ham sandwich cut may be
-                        vertical. You may want to try other algorithms for
-                        better results.
                       </Typography>
                     )}
                   </>
