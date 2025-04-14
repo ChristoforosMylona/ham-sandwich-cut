@@ -453,9 +453,9 @@ const ReactChartJs: React.FC = () => {
         showTooltip: true,
         onDragStart: function (
           e: TouchEvent | MouseEvent,
-          datasetIndex: number,
-          index: number,
-          value: any
+          _datasetIndex: number,
+          _index: number,
+          _value: any
         ): boolean {
           // Desktop: allow drag if mouse is down on a point
           if (!("touches" in e)) {
