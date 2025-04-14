@@ -667,52 +667,76 @@ const ReactChartJs: React.FC = () => {
     <div className={classes.outerDiv}>
       <Box
         display="flex"
+        flexDirection={{ xs: "column", custom1050: "row" }}
         alignItems="center"
-        justifyContent="center"
-        position="relative"
         width="100%"
-        marginBottom={2}
+        marginBottom={{ xs: 4, custom1050: 2 }}
+        gap={2}
       >
-        {/* Endpoint Selection - Left Aligned */}
-        <TextField
-          select
-          label="Choose Algorithm"
-          value={selectedEndpoint}
-          onChange={(e) => {
-            if (e.target.value !== "default") {
-              setTeachMode(false);
-            }
-            memoizedAlgorithmChange(e);
-            setSelectedEndpoint(e.target.value);
-          }}
-          SelectProps={{ native: true }}
-          variant="outlined"
-          sx={{
-            position: "absolute",
-            left: 20,
-            top: 1,
-            minWidth: 180,
-          }}
-        >
-          <option value="default">Simplified L-M-S Algorithm</option>
-          <option value="brute-force">Brute Force</option>
-          <option value="ham-sandwich-mlp">MILP Method</option>
-          {/* <option value="ham-sandwich-ilp">ILP Method</option> */}
-        </TextField>
-
-        {/* Title - Centered */}
+        {/* Title */}
         <Typography
           variant="h3"
           className={classes.title}
           sx={{
-            position: "absolute",
-            left: "50%",
-            transform: "translateX(-50%)",
-            whiteSpace: "nowrap",
+            fontSize: { xs: "1.75rem", sm: "2.5rem", custom1050: "3rem" },
+            mb: { xs: 2, custom1050: 0 },
+            textAlign: "center",
+            width: "100%",
+            order: { xs: 1, custom1050: 2 },
           }}
         >
-          Ham Sandwich Cut 🥪
+          Ham Sandwich Cut
+          <Box
+            component="span"
+            sx={{
+              display: { xs: "none", custom350: "inline" },
+            }}
+          >
+            {" 🥪"}
+          </Box>
         </Typography>
+
+        {/* Endpoint Selection */}
+        <Box
+          sx={{
+            width: { xs: "100%", sm: "300px" },
+            display: "flex",
+            justifyContent: "center",
+            position: { xs: "static", custom1050: "absolute" },
+            left: { custom1050: 20 },
+            order: { xs: 2, custom1050: 1 },
+          }}
+        >
+          <TextField
+            select
+            label="Choose Algorithm"
+            value={selectedEndpoint}
+            onChange={(e) => {
+              if (e.target.value !== "default") {
+                setTeachMode(false);
+              }
+              memoizedAlgorithmChange(e);
+              setSelectedEndpoint(e.target.value);
+            }}
+            SelectProps={{ native: true }}
+            variant="outlined"
+            sx={{
+              width: "100%",
+              "& .MuiInputLabel-root": {
+                position: "relative",
+                transform: "none",
+                marginBottom: 1,
+              },
+              "& .MuiSelect-select": {
+                paddingTop: 2,
+              },
+            }}
+          >
+            <option value="default">Simplified L-M-S Algorithm</option>
+            <option value="brute-force">Brute Force</option>
+            <option value="ham-sandwich-mlp">MILP Method</option>
+          </TextField>
+        </Box>
       </Box>
 
       {/* Hide everything except step navigation when Teach Mode is ON */}
@@ -722,14 +746,22 @@ const ReactChartJs: React.FC = () => {
           justifyContent="center"
           alignItems="center"
           gap={1}
-          flexDirection="row"
+          flexDirection={{ xs: "column", sm: "row" }} // Stack vertically on mobile
           width="100%"
-          height={"120px"}
+          height={{ xs: "auto", sm: "120px" }} // Auto height on mobile
           marginTop={0}
+          padding={1}
         >
+          {/* Points inputs in a row on mobile */}
+          {/* <Box
+            display="flex"
+            flexDirection={{ xs: "column", sm: "row" }}
+            gap={1}
+            width="100%"
+          > */}
           {/* Red Points Input with Fixed Helper Text */}
           <Tooltip title="Max 50 points per set due to limited hardware">
-            <Box position="relative" minWidth={150}>
+            <Box position="relative" width={{ xs: "100%", sm: 150 }}>
               <TextField
                 label="Number of Red Points"
                 type="number"
@@ -756,7 +788,7 @@ const ReactChartJs: React.FC = () => {
 
           <Tooltip title="Max 50 points per set due to limited hardware">
             {/* Blue Points Input with Fixed Helper Text */}
-            <Box position="relative" minWidth={150}>
+            <Box position="relative" width={{ xs: "100%", sm: 150 }}>
               <TextField
                 label="Number of Blue Points"
                 type="number"
@@ -780,27 +812,41 @@ const ReactChartJs: React.FC = () => {
               )}
             </Box>
           </Tooltip>
+          {/* </Box> */}
 
           {/* Randomize Button */}
-          <Button
-            variant="contained"
-            onClick={() => {
-              if (teachMode) {
-                setCurrentStepIndex(0);
-              }
-              setFinalCut(null);
-              randomiseData();
-            }}
-            sx={{ height: "36.5px" }}
+          <Box
+            display="flex"
+            flexDirection={{ xs: "row", sm: "row" }}
+            gap={1}
+            width={{ xs: "100%", sm: "auto" }}
+            justifyContent="center"
           >
-            Randomise Chart
-          </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                if (teachMode) {
+                  setCurrentStepIndex(0);
+                }
+                setFinalCut(null);
+                randomiseData();
+              }}
+              sx={{
+                height: "36.5px",
+                flex: { xs: 1, sm: "none" },
+              }}
+            >
+              Randomise
+            </Button>
 
-          {/* File Upload & Download */}
-          <FileUploadDownloadButton
-            handleFileUpload={handleFileUpload}
-            handleDownloadCurrentPointSet={handleDownloadCurrentPointSet}
-          />
+            {/* File Upload & Download */}
+            <Box sx={{ flex: { xs: 1, sm: "none" } }}>
+              <FileUploadDownloadButton
+                handleFileUpload={handleFileUpload}
+                handleDownloadCurrentPointSet={handleDownloadCurrentPointSet}
+              />
+            </Box>
+          </Box>
         </Box>
       </Collapse>
 
