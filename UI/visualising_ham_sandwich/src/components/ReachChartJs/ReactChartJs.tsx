@@ -612,11 +612,6 @@ const ReactChartJs: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log({ redData });
-    console.log({ blueData });
-  }, [redData, blueData]);
-
-  useEffect(() => {
     memoizedCalculateLine();
   }, [redData, blueData, selectedEndpoint]);
 
