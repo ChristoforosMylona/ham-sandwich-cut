@@ -122,18 +122,18 @@ class LinearPlanarCut:
         )
 
         ham_points = red_med_linestring.intersection(blue_med_linestring)
-
+        
+        # In the case where there are multiple intersections, there will be multiple Ham Sandwich cuts calculated (Multi Point instead of point), we only care about one though
         if isinstance(ham_points, (Point, MultiPoint)):
             ham_points = ham_points.geoms[0] if isinstance(ham_points, MultiPoint) else ham_points  
-
-            # print("ham_points:", ham_points)  
 
             line = compute_dual_line(ham_points, constant=self.ham_instance.plot_constant)
             
             return "non-vertical", (line.m, line.b)
 
         elif isinstance(ham_points, (LineString, LineStringEmpty) or ham_points.is_empty):
-            # In the case where the cut is a vertical line
+            # In the case where the cut is a vertical line, the ham_points will be a LineString or empty
+            # This is because the dual lines of the points are parallel and hence do not intersect
             def get_dual_point(line): 
                 x1, y1 = line.coords[0]
                 x2, y2  = line.coords[1]
@@ -141,12 +141,10 @@ class LinearPlanarCut:
                 a = (y2-y1)/(x2-x1)
                 b = y1 - a * x1
                 
-                # dual point = (a, -b)                    
                 return (a, -b)
                         
             dual_point_1 = get_dual_point(red_med_linestring)
             dual_point_2 = get_dual_point(blue_med_linestring)
-            # print(dual_point_1, dual_point_2)
             
             # Check if the two dual points are on a vertical line (i.e., the x-coordinates are the same)
             if dual_point_1[0] == dual_point_2[0]:  # x-coordinates are the same

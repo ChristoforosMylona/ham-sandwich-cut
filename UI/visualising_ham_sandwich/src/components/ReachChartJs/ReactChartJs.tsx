@@ -694,7 +694,7 @@ const ReactChartJs: React.FC = () => {
             minWidth: 180,
           }}
         >
-          <option value="default">Lo-Matoušek-Steiger</option>
+          <option value="default">Simplified L-M-S Algorithm</option>
           <option value="brute-force">Brute Force</option>
           <option value="ham-sandwich-mlp">MILP Method</option>
           {/* <option value="ham-sandwich-ilp">ILP Method</option> */}
