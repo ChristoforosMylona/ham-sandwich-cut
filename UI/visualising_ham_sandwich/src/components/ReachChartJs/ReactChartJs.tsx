@@ -454,20 +454,43 @@ const ReactChartJs: React.FC = () => {
           _value: any
         ): boolean {
           if ("touches" in e && e.type.includes("touch")) {
-            let isDragging = false;
+            // Store touch start time and position
+            const touch = e.touches[0];
+            const touchStartX = touch.clientX;
+            const touchStartY = touch.clientY;
 
+            let longPressDetected = false;
+            let hasMoved = false;
+
+            // Set up long press detection
             const longPressTimer = setTimeout(() => {
-              isDragging = true;
+              if (!hasMoved) {
+                longPressDetected = true;
+              }
             }, 500);
 
-            // Add touch end listener to clear timer
+            // Monitor touch movement
+            const touchMoveHandler = (moveEvent: TouchEvent) => {
+              const moveTouch = moveEvent.touches[0];
+              const deltaX = Math.abs(moveTouch.clientX - touchStartX);
+              const deltaY = Math.abs(moveTouch.clientY - touchStartY);
+
+              if (deltaX > 5 || deltaY > 5) {
+                hasMoved = true;
+              }
+            };
+
+            // Clean up on touch end
             const touchEndHandler = () => {
               clearTimeout(longPressTimer);
+              document.removeEventListener("touchmove", touchMoveHandler);
               document.removeEventListener("touchend", touchEndHandler);
             };
+
+            document.addEventListener("touchmove", touchMoveHandler);
             document.addEventListener("touchend", touchEndHandler);
 
-            return isDragging;
+            return longPressDetected;
           }
           return true; // Allow immediate drag on desktop
         },
@@ -493,6 +516,7 @@ const ReactChartJs: React.FC = () => {
           enabled: true,
           mode: "xy",
           modifierKey: "ctrl",
+          threshold: 10,
         },
       },
       tooltip: {
@@ -1053,8 +1077,7 @@ const ReactChartJs: React.FC = () => {
                           fontSize: "body1",
                           fontStyle: "italic",
                         }}
-                      >
-                      </Typography>
+                      ></Typography>
                     )}
                   </>
                 )}
