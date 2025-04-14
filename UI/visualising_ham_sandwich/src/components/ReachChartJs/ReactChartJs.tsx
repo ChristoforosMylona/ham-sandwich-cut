@@ -7,6 +7,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
   useTheme,
 } from "@mui/material";
 import {
@@ -47,6 +48,7 @@ import {
 } from "@mui/icons-material";
 import { calculateLine } from "../api/CalculateLineService";
 import { handlePointsChange } from "./Handlers";
+
 import classes from "./ReactChartJs.module.scss";
 
 ChartJS.register(...registerables, annotationPlugin, zoomPlugin);
@@ -60,6 +62,8 @@ ChartJS.register(
 const PADDING_FACTOR = 2;
 
 const ReactChartJs: React.FC = () => {
+  const isMobile = useMediaQuery("(max-width:750px)");
+
   const [redPoints, setRedPoints] = useState(7);
   const [bluePoints, setBluePoints] = useState(5);
   const [redData, setRedData] = useState<Point[]>([]);
@@ -449,53 +453,53 @@ const ReactChartJs: React.FC = () => {
         showTooltip: true,
         onDragStart: function (
           e: TouchEvent | MouseEvent,
+          datasetIndex: number,
+          index: number,
+          value: any
+        ): boolean {
+          // Desktop: allow drag if mouse is down on a point
+          if (!("touches" in e)) {
+            return true;
+          }
+
+          // Mobile: use the original TouchEvent for hit testing
+          const chart = chartRef.current;
+          if (!chart) return false;
+
+          // Use the original event for hit testing
+          const elements = chart.getElementsAtEventForMode(
+            e, // Pass the original TouchEvent
+            "nearest",
+            { intersect: true },
+            false
+          );
+
+          if (elements && elements.length > 0) {
+            // Disable pan while dragging
+            if (chart.options.plugins?.zoom?.pan) {
+              chart.options.plugins.zoom.pan.enabled = false;
+            }
+            return true;
+          }
+
+          // Not touching a point: allow pan
+          if (chart.options.plugins?.zoom?.pan) {
+            chart.options.plugins.zoom.pan.enabled = true;
+          }
+          return false;
+        },
+        onDragEnd: function (
+          _e: TouchEvent | MouseEvent,
           _datasetIndex: number,
           _index: number,
           _value: any
-        ): boolean {
-          if ("touches" in e && e.type.includes("touch")) {
-            // Store touch start time and position
-            const touch = e.touches[0];
-            const touchStartX = touch.clientX;
-            const touchStartY = touch.clientY;
-
-            let longPressDetected = false;
-            let hasMoved = false;
-
-            // Set up long press detection
-            const longPressTimer = setTimeout(() => {
-              if (!hasMoved) {
-                longPressDetected = true;
-              }
-            }, 500);
-
-            // Monitor touch movement
-            const touchMoveHandler = (moveEvent: TouchEvent) => {
-              const moveTouch = moveEvent.touches[0];
-              const deltaX = Math.abs(moveTouch.clientX - touchStartX);
-              const deltaY = Math.abs(moveTouch.clientY - touchStartY);
-
-              if (deltaX > 5 || deltaY > 5) {
-                hasMoved = true;
-              }
-            };
-
-            // Clean up on touch end
-            const touchEndHandler = () => {
-              clearTimeout(longPressTimer);
-              document.removeEventListener("touchmove", touchMoveHandler);
-              document.removeEventListener("touchend", touchEndHandler);
-            };
-
-            document.addEventListener("touchmove", touchMoveHandler);
-            document.addEventListener("touchend", touchEndHandler);
-
-            return longPressDetected;
+        ) {
+          // Re-enable panning after drag
+          const chart = chartRef.current;
+          if (chart?.options.plugins?.zoom?.pan) {
+            chart.options.plugins.zoom.pan.enabled = true;
           }
-          return true; // Allow immediate drag on desktop
-        },
-        onDragEnd: () => {
-          memoizedCalculateLine(); // Recalculate on drag end
+          memoizedCalculateLine();
           if (teachMode) {
             setCurrentStepIndex(0);
           }
@@ -511,12 +515,13 @@ const ReactChartJs: React.FC = () => {
             enabled: true,
           },
           mode: "xy",
+          overScaleMode: "xy",
         },
         pan: {
           enabled: true,
           mode: "xy",
           modifierKey: "ctrl",
-          threshold: 10,
+          threshold: 15,
         },
       },
       tooltip: {
@@ -1090,7 +1095,7 @@ const ReactChartJs: React.FC = () => {
             sx={{
               position: "absolute",
               bottom: 10,
-              right: 75,
+              right: isMobile ? 10 : 75, // Move to right edge if help icon is hidden
               zIndex: 20,
               backgroundColor:
                 theme.palette.mode === "dark"
@@ -1117,44 +1122,46 @@ const ReactChartJs: React.FC = () => {
                 color="default"
                 onClick={() => chartRef.current?.resetZoom()}
               >
-                <ZoomOutMap /> {/* Uses a zoom-related icon */}
+                <ZoomOutMap />
               </IconButton>
             </Tooltip>
           </Box>
 
           {/* Pan & Zoom Help Icon - Positioned Bottom Right */}
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: 10,
-              right: 10,
-              zIndex: 20,
-              backgroundColor:
-                theme.palette.mode === "dark"
-                  ? "rgba(255, 255, 255, 0.2)"
-                  : "rgba(0, 0, 0, 0.1)",
-              borderRadius: "50%",
-              padding: "6px",
-              boxShadow: 3,
-              cursor: "pointer",
-              opacity: 0.5,
-              transition:
-                "opacity 0.3s ease-in-out, background-color 0.3s ease-in-out",
-              "&:hover": {
-                opacity: 1,
+          {!isMobile && (
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 10,
+                right: 10,
+                zIndex: 20,
                 backgroundColor:
                   theme.palette.mode === "dark"
-                    ? "rgba(255, 255, 255, 0.4)"
-                    : "rgba(0, 0, 0, 0.2)",
-              },
-            }}
-          >
-            <Tooltip title="Hold Ctrl to Pan & Zoom">
-              <IconButton color="default">
-                <HelpOutline />
-              </IconButton>
-            </Tooltip>
-          </Box>
+                    ? "rgba(255, 255, 255, 0.2)"
+                    : "rgba(0, 0, 0, 0.1)",
+                borderRadius: "50%",
+                padding: "6px",
+                boxShadow: 3,
+                cursor: "pointer",
+                opacity: 0.5,
+                transition:
+                  "opacity 0.3s ease-in-out, background-color 0.3s ease-in-out",
+                "&:hover": {
+                  opacity: 1,
+                  backgroundColor:
+                    theme.palette.mode === "dark"
+                      ? "rgba(255, 255, 255, 0.4)"
+                      : "rgba(0, 0, 0, 0.2)",
+                },
+              }}
+            >
+              <Tooltip title="Hold Ctrl to Pan & Zoom">
+                <IconButton color="default">
+                  <HelpOutline />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
         </div>
       </div>
     </div>
