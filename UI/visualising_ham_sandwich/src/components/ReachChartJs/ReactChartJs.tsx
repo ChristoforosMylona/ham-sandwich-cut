@@ -1,4 +1,13 @@
 import {
+  ArrowBack,
+  ArrowForward,
+  FirstPage,
+  HelpOutline,
+  LastPage,
+  MenuBook,
+  ZoomOutMap,
+} from "@mui/icons-material";
+import {
   Box,
   Button,
   Collapse,
@@ -34,22 +43,14 @@ import React, {
 } from "react";
 import { Line } from "react-chartjs-2";
 import readXlsxFile from "read-excel-file";
+import { calculateLine } from "../api/CalculateLineService";
+import { hamSandwichLineTooltipPlugin } from "../Plugins/hamSandwichLineTooltipPlugin";
 import FileUploadDownloadButton from "./FileUploadDownloadButton";
+import { handlePointsChange } from "./Handlers";
 import { Point, Step, StepData } from "./Types/Step";
 
-import {
-  ArrowBack,
-  ArrowForward,
-  FirstPage,
-  HelpOutline,
-  LastPage,
-  MenuBook,
-  ZoomOutMap,
-} from "@mui/icons-material";
-import { calculateLine } from "../api/CalculateLineService";
-import { handlePointsChange } from "./Handlers";
-
 import classes from "./ReactChartJs.module.scss";
+import { isVerticalCut } from "../Util/isVerticalCut";
 
 ChartJS.register(...registerables, annotationPlugin, zoomPlugin);
 ChartJS.register(
@@ -57,7 +58,8 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
-  TooltipJS
+  TooltipJS,
+  hamSandwichLineTooltipPlugin
 );
 const PADDING_FACTOR = 2;
 
@@ -216,7 +218,8 @@ const ReactChartJs: React.FC = () => {
         borderWidth: 2,
         showLine: true,
         fill: false,
-        pointRadius: 0, // Hide points for the ham cut line
+        pointRadius: 0, // No visible points
+        pointHitRadius: 20, // Makes the line itself hoverable for tooltips
         backgroundColor: "rgba(75, 192, 192, 1)",
       });
     }
@@ -525,30 +528,81 @@ const ReactChartJs: React.FC = () => {
         },
       },
       tooltip: {
+        displayColors: false,
         enabled: true, // Ensure tooltips are enabled
+        external: function (context) {
+          const { chart, tooltip } = context;
+          let tooltipEl = document.getElementById("chartjs-custom-tooltip");
+          if (!tooltipEl) {
+            tooltipEl = document.createElement("div");
+            tooltipEl.id = "chartjs-custom-tooltip";
+            tooltipEl.style.position = "absolute";
+            tooltipEl.style.pointerEvents = "none";
+            tooltipEl.style.background = "rgba(0,0,0,0.8)";
+            tooltipEl.style.color = "white";
+            tooltipEl.style.borderRadius = "4px";
+            tooltipEl.style.padding = "6px 8px";
+            tooltipEl.style.fontSize = "14px";
+            tooltipEl.style.zIndex = "1000";
+            document.body.appendChild(tooltipEl);
+          }
+
+          // Always hide if tooltip is not visible
+          if (tooltip.opacity === 0) {
+            tooltipEl.style.opacity = "0";
+            return;
+          }
+
+          const isHamSandwich =
+            tooltip.dataPoints?.[0]?.dataset.label === "Ham Sandwich Cut";
+          if (isHamSandwich) {
+            tooltip.options.enabled = false;
+            tooltipEl.innerHTML = tooltip.body?.[0]?.lines?.[0] ?? "";
+            const mouse = (chart as any)._hamSandwichTooltipMouse;
+            if (mouse) {
+              const canvasRect = chart.canvas.getBoundingClientRect();
+              tooltipEl.style.opacity = "1";
+              tooltipEl.style.left =
+                canvasRect.left + window.scrollX + mouse.x + 10 + "px";
+              tooltipEl.style.top =
+                canvasRect.top + window.scrollY + mouse.y + 10 + "px";
+            } else {
+              tooltipEl.style.opacity = "0";
+            }
+          } else {
+            tooltip.options.enabled = true;
+            tooltipEl.style.opacity = "0";
+          }
+        },
         callbacks: {
           label: function (context) {
-            const raw = context.raw as { x: number; y: number };
-
-            // Check dataset label to determine how to display the information
+            // Show equation if this is the Ham Sandwich Cut line and the mouse is not on a real point
             if (
               context.dataset.label === "Ham Sandwich Cut" &&
-              currentStepData?.cut
+              (context.dataIndex === 0 || context.dataIndex === 1)
             ) {
-              // Display Ham Sandwich Cut equation
-              return `Ham Sandwich Cut: y = ${currentStepData.cut.slope.toFixed(
-                2
-              )}x + ${currentStepData.cut.intercept.toFixed(2)}`;
-            } else if (
-              context.dataset.label === "Ham Sandwich Cut Dual Point"
-            ) {
-              // Display Dual Point coordinates
+              const cut = currentStepData?.cut || finalCut;
+              if (cut) {
+                if (
+                  isVerticalCut(cut) &&
+                  cut.is_vertical &&
+                  cut.x_intercept !== null
+                ) {
+                  return `Ham Sandwich Cut: x = ${cut.x_intercept.toFixed(2)}`;
+                } else if (cut.slope !== null && cut.intercept !== null) {
+                  return `Ham Sandwich Cut: y = ${cut.slope.toFixed(
+                    2
+                  )}x + ${cut.intercept.toFixed(2)}`;
+                }
+              }
+            }
+            // Default: show normal point info
+            const raw = context.raw as { x: number; y: number };
+            if (context.dataset.label === "Ham Sandwich Cut Dual Point") {
               return `Dual Point: (${raw.x.toFixed(2)}, ${raw.y.toFixed(2)})`;
             } else if (context.dataset.label?.includes("Interval")) {
-              // Display interval info (vertical line)
               return `Interval: x = ${raw.x.toFixed(2)}`;
             } else {
-              // Default label for other points
               return `${context.dataset.label}: (${raw.x.toFixed(
                 2
               )}, ${raw.y.toFixed(2)})`;
@@ -570,6 +624,13 @@ const ReactChartJs: React.FC = () => {
       },
     },
   };
+
+  useEffect(() => {
+    return () => {
+      const tooltipEl = document.getElementById("chartjs-custom-tooltip");
+      if (tooltipEl) tooltipEl.remove();
+    };
+  }, []);
 
   const handleDownloadCurrentPointSet = () => {
     // Create an object containing the current red and blue points
