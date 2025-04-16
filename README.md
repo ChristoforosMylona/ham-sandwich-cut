@@ -1,3 +1,7 @@
+# Ham-Sandwich: A Visualisation Project
+
+This project explores algorithms and computational approaches for finding Ham-Sandwich cuts in two-dimensional point sets. It features a web-based visualization tool (React frontend and Flask backend), benchmarking scripts, and several algorithmic implementations—including brute-force, MILP-based, and classical geometric methods. The codebase is designed for both experimentation and reproducibility, supporting both Dockerized and local development workflows.
+
 ## Clone the Repository
 
 If you haven't already, clone the repository to your local machine:
