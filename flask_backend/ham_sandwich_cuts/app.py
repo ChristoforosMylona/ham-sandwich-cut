@@ -22,10 +22,12 @@ app = Flask(__name__)
 
 app.config.from_object(Config)
 
+logging.basicConfig(level=logging.DEBUG)
+
 flask_env = os.getenv("FLASK_ENV", "development")
 if flask_env != "production":
     # Allow localhost:5173 in non-production environments
-    CORS(app, origins=["http://localhost:5173"])
+    CORS(app, origins="*")
     print("CORS enabled for development env")
 else:
     # In production, you can restrict origins or leave it empty (disallow all)
