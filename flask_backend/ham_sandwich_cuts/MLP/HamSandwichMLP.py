@@ -169,15 +169,6 @@ def generate_random_points(n, lower=-10, upper=10):
     return points
 
 
-# def generate_random_points(n, lower=-10, upper=10):
-    # """Generate n random points with coordinates in [lower, upper]."""
-    # points = [
-    #     (round(random.uniform(lower, upper), 2), round(random.uniform(lower, upper), 2))
-    #     for _ in range(n)
-    # ]
-    # return points
-
-
 if __name__ == "__main__":
     n_A = 100
     n_B = 100

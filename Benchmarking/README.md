@@ -127,6 +127,5 @@ Alternatively, run the script without arguments to interactively select the resu
 
 ## 4. Notes
 
-- Ensure that the `src` folder is in your Python path. If running in an IDE like VS Code, set the `PYTHONPATH` to include the `src` directory.
 - Use `python -m` to run the scripts as modules from the `src` directory.
 - The `Results` directory will store all benchmarking results, and the `Points` directory will store generated point sets.

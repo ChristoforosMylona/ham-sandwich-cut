@@ -323,7 +323,7 @@ if __name__ == "__main__":
     # Save the results and points to files
     results = {
         "brute_times": brute_times,
-        "ortools_times": ortools_times,
+        "milp_times": ortools_times,  # <-- changed key
         "planar_cut_times": planar_cut_times,
         "brute_no_numpy_times": brute_no_numpy_times,
     }

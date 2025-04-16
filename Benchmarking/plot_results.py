@@ -38,21 +38,26 @@ def plot_times(results, show_stderr=True, selected_algorithms=None):
         print("No data to plot.")
         return
 
-    # Define a consistent color mapping for algorithms
+    # Alias "ortools_times" and "ortools" to "milp_times" for consistent labeling
+    aliased_results = {}
+    for k, v in results.items():
+        if k in ("ortools_times", "ortools"):
+            aliased_results["milp_times"] = v
+        else:
+            aliased_results[k] = v
+
     algorithm_colors = {
         "brute_times": "red",
-        "ortools_times": "blue",
+        "milp_times": "blue",
         "planar_cut_times": "green",
         "brute_no_numpy_times": "purple",
     }
 
     plt.figure(figsize=(10, 6))
 
-    for algorithm, times in results.items():
-        if not times:  # Skip algorithms with no data
+    for algorithm, times in aliased_results.items():
+        if not times:
             continue
-
-        # Skip algorithms not selected by the user
         if selected_algorithms and algorithm not in selected_algorithms:
             continue
 
@@ -60,20 +65,21 @@ def plot_times(results, show_stderr=True, selected_algorithms=None):
         means = [times[str(size)]["mean"] for size in sizes]
         stdevs = [times[str(size)]["stdev"] for size in sizes]
 
-        # Use the predefined color for the algorithm
-        color = algorithm_colors.get(algorithm, "black")  # Default to black if not in the mapping
+        color = algorithm_colors.get(algorithm, "black")
 
-        # Plot with or without error bars
+        # Always label milp_times as "MILP"
+        label = "MILP" if algorithm == "milp_times" else algorithm.replace("_times", "").replace("_", " ").title()
+
         plt.errorbar(
             sizes, means, yerr=stdevs if show_stderr else None,
-            label=algorithm.replace("_", " ").title(),
+            label=label,
             color=color, marker='o', capsize=5, linestyle="-"
         )
 
     plt.xlabel("Number of Points")
     plt.ylabel("Average Execution Time (seconds)")
     plt.title("Algorithm Runtime Comparison" + (" with Standard Deviation" if show_stderr else ""))
-    plt.legend()  # Only include algorithms that were plotted
+    plt.legend()
     plt.grid(True)
     plt.show()
 
