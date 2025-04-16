@@ -1,0 +1,2 @@
+# Attempted Implementations
+This folder contains initial attempts to implement the algorithms of Edelsbrunner and Waupotitsch, as well as Megiddo, for computing Ham-Sandwich cuts. While significant progress was made in understanding and partially coding these approaches, neither implementation was completed to a fully working state. The files here serve as documentation of the exploration process and may be useful for future reference or further development.

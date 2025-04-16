@@ -117,10 +117,8 @@ Once the servers are up, you can access the following:
 To stop both the Flask and React servers, simply press `Ctrl+C` in the terminal where you ran the script.
 
 ### Warning
-- This method runs the applications in **development mode**, not production. The Flask app will run with debug mode enabled, and the React app will be in hot-reloading development mode.
-- **For production deployments, refer to the Docker-based setup** or follow proper deployment instructions.
+This method runs the applications in **development mode**, not production. The Flask app will run with debug mode enabled, and the React app will be in hot-reloading development mode.
 
-That's it! You should now have the project running locally in development mode using the provided script.
 
 ## Additional Resources
 
